@@ -62,18 +62,52 @@ export default function Signup() {
 
   const onSubmit = async (data) => {
     setIsLoading(true);
-    // Simulate network delay for loading state
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setIsLoading(false);
+    try {
+      const response = await fetch('http://localhost:5000/api/admin/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          first_name: data.firstName,
+          last_name: data.lastName,
+          email: data.email,
+          password: data.password
+        })
+      });
 
-    showToast({
-      title: "Account Created",
-      description: "Welcome to AssetFlow! Redirecting to Dashboard...",
-    });
-    // Simulate redirect
-    setTimeout(() => {
-      navigate('/dashboard');
-    }, 1000);
+      const result = await response.json();
+      setIsLoading(false);
+
+      if (result.success) {
+        // Persist token and user profile
+        localStorage.setItem('token', result.data.token);
+        localStorage.setItem('user', JSON.stringify(result.data.user));
+
+        showToast({
+          title: "Account Created",
+          description: "Welcome to AssetFlow! Redirecting to Dashboard...",
+        });
+
+        // Redirect to Dashboard
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 1000);
+      } else {
+        showToast({
+          variant: "destructive",
+          title: "Signup Failed",
+          description: result.message || "Failed to create an account. Please try again.",
+        });
+      }
+    } catch (err) {
+      setIsLoading(false);
+      showToast({
+        variant: "destructive",
+        title: "Connection Error",
+        description: "Cannot connect to the authentication server. Verify that the backend is running.",
+      });
+    }
   };
 
   const handleSocialLogin = async (provider) => {

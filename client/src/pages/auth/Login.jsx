@@ -74,24 +74,48 @@ export default function Login() {
 
   const onSubmit = async (data) => {
     setIsLoading(true);
-    // Simulate network delay for loading state
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setIsLoading(false);
-
-    if (validPersonas.includes(data.email) && data.password) {
-      showToast({
-        title: "Authentication Successful",
-        description: "Redirecting to Dashboard...",
+    try {
+      const response = await fetch('http://localhost:5000/api/admin/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          email: data.email,
+          password: data.password
+        })
       });
-      // Simulate redirect
-      setTimeout(() => {
-        if(typeof navigate === 'function') navigate('/dashboard');
-      }, 1000);
-    } else {
+
+      const result = await response.json();
+      setIsLoading(false);
+
+      if (result.success) {
+        // Persist token and user profile
+        localStorage.setItem('token', result.data.token);
+        localStorage.setItem('user', JSON.stringify(result.data.user));
+
+        showToast({
+          title: "Authentication Successful",
+          description: "Redirecting to Dashboard...",
+        });
+
+        // Redirect to Dashboard
+        setTimeout(() => {
+          if (typeof navigate === 'function') navigate('/dashboard');
+        }, 1000);
+      } else {
+        showToast({
+          variant: "destructive",
+          title: "Authentication Failed",
+          description: result.message || "Invalid email or password. Please try again.",
+        });
+      }
+    } catch (err) {
+      setIsLoading(false);
       showToast({
         variant: "destructive",
-        title: "Authentication Failed",
-        description: "Invalid email or password. Please try again.",
+        title: "Connection Error",
+        description: "Cannot connect to the authentication server. Verify that the backend is running.",
       });
     }
   };

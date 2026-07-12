@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
 const adminRoutes = require('./routes/admin');
+const authRoutes = require('./routes/auth');
 const requestLogger = require('./middleware/requestLogger');
 const errorHandler = require('./middleware/errorHandler');
 
@@ -30,6 +31,7 @@ app.use(requestLogger);
 // Base API Routing
 // ==========================================
 
+app.use('/api/admin/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 
 // Root test endpoint
