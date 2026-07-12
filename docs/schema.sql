@@ -321,10 +321,10 @@ INSERT INTO `designations` (`id`, `designation_name`, `department_id`, `descript
 -- 3. Insert Users
 -- (Passwords are BCrypt hashes of 'Password123' for demonstration)
 INSERT INTO `users` (`id`, `employee_code`, `first_name`, `last_name`, `email`, `phone`, `password_hash`, `profile_image`, `department_id`, `designation_id`, `joining_date`, `status`) VALUES
-(1, 'EMP-001', 'Kavya', 'Vaghela', 'kavya.v@assetflow.com', '+1234567890', '$2b$10$eFytJDGtjbThAOM70G8xOu1G9S3q2h.uN611fC/Yg.Z6d8B19VwXy', 'profile_kavya.png', 3, 3, '2022-01-15', 'Active'),
-(2, 'EMP-002', 'Jane', 'Smith', 'jane.smith@assetflow.com', '+1987654321', '$2b$10$eFytJDGtjbThAOM70G8xOu1G9S3q2h.uN611fC/Yg.Z6d8B19VwXy', NULL, 2, 2, '2023-03-01', 'Active'),
-(3, 'EMP-003', 'John', 'Doe', 'john.doe@assetflow.com', '+1555019922', '$2b$10$eFytJDGtjbThAOM70G8xOu1G9S3q2h.uN611fC/Yg.Z6d8B19VwXy', 'profile_john.png', 3, 4, '2023-06-15', 'Active'),
-(4, 'EMP-004', 'Sarah', 'Connor', 'sarah.connor@assetflow.com', '+1555019944', '$2b$10$eFytJDGtjbThAOM70G8xOu1G9S3q2h.uN611fC/Yg.Z6d8B19VwXy', NULL, 4, 6, '2024-01-10', 'Active');
+(1, 'EMP-001', 'Kavya', 'Vaghela', 'kavya.v@assetflow.com', '+1234567890', '$2a$10$55dbz9kCSZ/gidGs/HR9juvHWf3pEo8IZW0hFbpLzzISjpDVE7V5W', 'profile_kavya.png', 3, 3, '2022-01-15', 'Active'),
+(2, 'EMP-002', 'Jane', 'Smith', 'jane.smith@assetflow.com', '+1987654321', '$2a$10$55dbz9kCSZ/gidGs/HR9juvHWf3pEo8IZW0hFbpLzzISjpDVE7V5W', NULL, 2, 2, '2023-03-01', 'Active'),
+(3, 'EMP-003', 'John', 'Doe', 'john.doe@assetflow.com', '+1555019922', '$2a$10$55dbz9kCSZ/gidGs/HR9juvHWf3pEo8IZW0hFbpLzzISjpDVE7V5W', 'profile_john.png', 3, 4, '2023-06-15', 'Active'),
+(4, 'EMP-004', 'Sarah', 'Connor', 'sarah.connor@assetflow.com', '+1555019944', '$2a$10$55dbz9kCSZ/gidGs/HR9juvHWf3pEo8IZW0hFbpLzzISjpDVE7V5W', NULL, 4, 6, '2024-01-10', 'Active');
 
 -- Update Department Heads (Now that users exist)
 UPDATE `departments` SET `department_head` = 1 WHERE `id` = 3; -- Kavya is head of IT
