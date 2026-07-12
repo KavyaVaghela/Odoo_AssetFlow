@@ -174,11 +174,26 @@ class AuthController {
       await pool.query('INSERT INTO user_roles (user_id, role_id) VALUES (?, 2)', [newUserId]);
 
       // 6. Create admin system notification
-      await pool.query(
-        `INSERT INTO notifications (user_id, title, message, type) 
-         VALUES (0, 'New Registration Pending', ?, 'System')`,
-        [`Employee ${first_name} ${last_name} (${employeeCode}) registered and is awaiting admin activation.`]
+      const [admins] = await pool.query(
+        `SELECT u.id FROM users u 
+         JOIN user_roles ur ON u.id = ur.user_id 
+         JOIN roles r ON ur.role_id = r.id 
+         WHERE r.role_name = 'Admin'`
       );
+
+      if (admins.length > 0) {
+        const notificationValues = admins.map(admin => [
+          admin.id,
+          'New Registration Pending',
+          `Employee ${first_name} ${last_name} (${employeeCode}) registered and is awaiting admin activation.`,
+          'System'
+        ]);
+
+        await pool.query(
+          `INSERT INTO notifications (user_id, title, message, type) VALUES ?`,
+          [notificationValues]
+        );
+      }
 
       // 7. Send registration received email
       await sendRegistrationEmail(email, `${first_name} ${last_name}`);
