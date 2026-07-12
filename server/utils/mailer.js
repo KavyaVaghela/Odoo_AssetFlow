@@ -1,9 +1,9 @@
-const nodemailer = require('nodemailer');
+import nodemailer from 'nodemailer';
 
 /**
  * Sends a transactional email asynchronously to minimize API response latency
  */
-const sendMail = async ({ to, subject, html }) => {
+export const sendMail = async ({ to, subject, html }) => {
   try {
     // Configure transporter (defaults to ethereal mock SMTP sandbox)
     const transporter = nodemailer.createTransport({
@@ -43,5 +43,3 @@ const sendMail = async ({ to, subject, html }) => {
     return false;
   }
 };
-
-module.exports = { sendMail };

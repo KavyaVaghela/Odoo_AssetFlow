@@ -5,6 +5,8 @@ import { errorMiddleware } from './middlewares/errorMiddleware.js';
 
 // Import Routes
 import adminRoutes from './routes/adminRoutes.js';
+import authRoutes from './routes/auth.js';
+import hodRoutes from './routes/hod.js';
 
 dotenv.config();
 
@@ -19,7 +21,9 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static('uploads'));
 
 // Routes
+app.use('/api/admin/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/hod', hodRoutes);
 
 // Health Check
 app.get('/health', (req, res) => {
