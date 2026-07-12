@@ -101,7 +101,13 @@ export default function Login() {
 
         // Redirect to Dashboard
         setTimeout(() => {
-          if (typeof navigate === 'function') navigate('/dashboard');
+          if (typeof navigate === 'function') {
+            if (result.data.user.role === 'Department Head') {
+              navigate('/department/dashboard');
+            } else {
+              navigate('/dashboard');
+            }
+          }
         }, 1000);
       } else {
         showToast({
@@ -166,7 +172,11 @@ export default function Login() {
       description: `Logged in with ${provider}. Redirecting to Dashboard...`,
     });
     setTimeout(() => {
-      if(typeof navigate === 'function') navigate('/dashboard');
+      if (typeof navigate === 'function') {
+        // Since this is just a mock for now, we'll route to dashboard.
+        // A real implementation would parse the role from the OAuth response.
+        navigate('/dashboard');
+      }
     }, 1000);
   };
 
