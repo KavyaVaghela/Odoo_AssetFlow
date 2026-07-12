@@ -36,7 +36,7 @@ export default function Dashboard() {
   // AI Assistant States
   const [isAiOpen, setIsAiOpen] = useState(false);
   const [aiMessages, setAiMessages] = useState([
-    { sender: 'ai', text: `Hello Dr. Rajesh Patel! I am your AssetFlow HOD Assistant. How can I help you optimize your department resources today?` }
+    { sender: 'ai', text: `Hello ${profile.name}! I am your AssetFlow AI Assistant. How can I help you optimize your resources today?` }
   ]);
   const [aiInput, setAiInput] = useState('');
 
@@ -68,7 +68,7 @@ export default function Dashboard() {
     } else if (cleanText.includes('today') && cleanText.includes('booking')) {
       responseText = `Today's active bookings include: Meeting Room A reserved by Priya Patel (14:00 - 15:00) and Cisco Networking Lab reserved by Rohan Mehta.`;
     } else {
-      responseText = `I understand you want to check: "${text}". I can fetch allocation details, check pending approvals, look up asset holders, or direct you to HOD management screens.`;
+      responseText = `I understand you want to check: "${text}". I can fetch allocation details, check pending approvals, look up asset holders, or direct you to management screens.`;
     }
 
     setTimeout(() => {
@@ -222,7 +222,7 @@ export default function Dashboard() {
         <CardHeader className="p-5 border-b">
           <CardTitle className="text-sm font-bold flex items-center gap-1.5">
             <CheckCircle2 className="w-4 h-4 text-primary" />
-            Today's HOD Action Items
+            Today's Action Items
           </CardTitle>
           <CardDescription className="text-xs">Critical operations awaiting sign-off or administrative verification.</CardDescription>
         </CardHeader>
@@ -295,7 +295,7 @@ export default function Dashboard() {
                   <Badge className="bg-purple-500/10 text-purple-600 border-purple-500/20 text-[8px] px-1.5 rounded-full font-bold uppercase">MEETING</Badge>
                   <CalendarDays className="w-3.5 h-3.5 text-purple-500" />
                 </div>
-                <h4 className="font-bold text-xs">HOD Council Meeting</h4>
+                <h4 className="font-bold text-xs">Council Meeting</h4>
                 <p className="text-[10px] text-muted-foreground mt-1">Agenda: Budget allocation.</p>
               </div>
               <Button size="sm" variant="link" className="p-0 h-auto text-[10px] text-primary font-bold self-start mt-2" onClick={() => navigate('/department/calendar')}>
@@ -383,7 +383,7 @@ export default function Dashboard() {
               <Edit3 className="w-4 h-4 text-primary" />
               Quick Notes
             </CardTitle>
-            <CardDescription className="text-[11px]">HOD quick reminders notebook (stored locally).</CardDescription>
+            <CardDescription className="text-[11px]">Quick reminders notebook (stored locally).</CardDescription>
           </CardHeader>
           <CardContent className="p-4">
             <textarea
@@ -476,7 +476,7 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      {/* Floating HOD AI Assistant */}
+      {/* Floating AI Assistant */}
       <div className="fixed bottom-6 right-6 z-40">
         <AnimatePresence>
           {isAiOpen && (
@@ -491,8 +491,8 @@ export default function Dashboard() {
                 <div className="flex items-center gap-2">
                   <Sparkles className="w-5 h-5 text-yellow-300 animate-pulse" />
                   <div>
-                    <h3 className="font-bold text-sm">AssetFlow HOD Assistant</h3>
-                    <p className="text-[10px] text-blue-100">Department Management Bot</p>
+                    <h3 className="font-bold text-sm">AssetFlow AI Assistant</h3>
+                    <p className="text-[10px] text-blue-100">Management Bot</p>
                   </div>
                 </div>
                 <button onClick={() => setIsAiOpen(false)} className="hover:text-blue-200">
@@ -515,7 +515,7 @@ export default function Dashboard() {
                 ))}
               </div>
 
-              {/* Suggested HOD prompts */}
+              {/* Suggested prompts */}
               <div className="px-4 py-2 bg-muted/20 border-t flex flex-wrap gap-1.5 text-[9px]">
                 <button 
                   onClick={() => sendAiMessage("Show pending approvals")} 

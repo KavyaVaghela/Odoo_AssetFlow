@@ -113,6 +113,20 @@ export default function Login() {
     }
   };
 
+  const handleSocialLogin = async (provider) => {
+    setIsLoading(true);
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    setIsLoading(false);
+    showToast({
+      title: "Authentication Successful",
+      description: `Logged in with ${provider}. Redirecting to Dashboard...`,
+    });
+    setTimeout(() => {
+      if (typeof navigate === 'function') {
+        navigate('/dashboard');
+      }
+    }, 1000);
+  };
   return (
     <div className="min-h-screen w-full flex bg-gray-50 dark:bg-black font-sans text-gray-900 dark:text-gray-100">
       {/* Left Panel: Branding */}
