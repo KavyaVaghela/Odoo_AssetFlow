@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useForm } from 'react-hook-form';
-import { Eye, EyeOff, CheckCircle2, AlertCircle, Loader2, User, Phone, Image, Building, ShieldCheck } from 'lucide-react';
+import { Eye, EyeOff, CheckCircle2, AlertCircle, Loader2, User, Phone, Image, Building, ShieldCheck, Settings, BarChart3 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../../services/api';
 
@@ -132,13 +132,40 @@ export default function Signup() {
 
       if (res.data.success) {
         showToast({
-          title: "Account Registered",
-          description: "Registration request submitted successfully. Waiting for admin approval.",
+          title: "Registration Request Sent",
+          description: "Your account request has been sent to the admin.",
         });
 
-        setTimeout(() => {
-          navigate('/login');
-        }, 3000);
+        // Simulate admin approval delay
+        setTimeout(async () => {
+          showToast({
+            title: "Request Approved!",
+            description: "Admin has approved your request. Logging you in...",
+            variant: "default"
+          });
+
+          // Auto-login to get token and redirect
+          try {
+            const loginRes = await api.post('/api/admin/auth/login', {
+              email: data.email,
+              password: data.password
+            });
+            
+            if (loginRes.data.success) {
+              const { accessToken, refreshToken, user } = loginRes.data.data;
+              localStorage.setItem('accessToken', accessToken);
+              localStorage.setItem('refreshToken', refreshToken);
+              localStorage.setItem('token', accessToken);
+              localStorage.setItem('user', JSON.stringify(user));
+              
+              setTimeout(() => {
+                navigate('/employee/dashboard');
+              }, 1000);
+            }
+          } catch (loginErr) {
+             navigate('/login');
+          }
+        }, 2000);
       }
     } catch (err) {
       setIsLoading(false);

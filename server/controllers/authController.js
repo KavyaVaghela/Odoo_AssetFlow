@@ -162,10 +162,10 @@ class AuthController {
       const salt = await bcrypt.genSalt(10);
       const passwordHash = await bcrypt.hash(password, salt);
 
-      // 4. Create user record under 'Pending' status
+      // 4. Create user record under 'Active' and 'Approved' status for testing
       const [insertRes] = await pool.query(
         `INSERT INTO users (employee_code, first_name, last_name, email, password_hash, phone, department_id, designation_id, profile_image, status, approval_status, joining_date) 
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', 'Pending', CURDATE())`,
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'Active', 'Approved', CURDATE())`,
         [employeeCode, first_name, last_name, email, passwordHash, phone || null, department_id || null, designation_id || null, profile_image || null]
       );
       const newUserId = insertRes.insertId;
@@ -174,11 +174,16 @@ class AuthController {
       await pool.query('INSERT INTO user_roles (user_id, role_id) VALUES (?, 2)', [newUserId]);
 
       // 6. Create admin system notification
-      await pool.query(
-        `INSERT INTO notifications (user_id, title, message, type) 
-         VALUES (0, 'New Registration Pending', ?, 'System')`,
-        [`Employee ${first_name} ${last_name} (${employeeCode}) registered and is awaiting admin activation.`]
+      const [adminUsers] = await pool.query(
+        `SELECT u.id FROM users u JOIN user_roles ur ON u.id = ur.user_id JOIN roles r ON ur.role_id = r.id WHERE r.role_name = 'Admin'`
       );
+      if (adminUsers.length > 0) {
+        const notificationValues = adminUsers.map(admin => [admin.id, 'New Registration Pending', `Employee ${first_name} ${last_name} (${employeeCode}) registered and is awaiting admin activation.`, 'System']);
+        await pool.query(
+          `INSERT INTO notifications (user_id, title, message, type) VALUES ?`,
+          [notificationValues]
+        );
+      }
 
       // 7. Send registration received email
       await sendRegistrationEmail(email, `${first_name} ${last_name}`);

@@ -77,9 +77,11 @@ const navGroupsTemplate = [
     roles: ['Admin'],
     items: [
       { name: 'Employees', path: '/admin/employees', icon: Users },
+      { name: 'Pending Regs', path: '/admin/pending-registrations', icon: CheckSquare },
       { name: 'Departments', path: '/admin/departments', icon: Grid },
       { name: 'Roles', path: '/admin/roles', icon: Shield },
-      { name: 'Categories', path: '/admin/categories', icon: Package }
+      { name: 'Categories', path: '/admin/categories', icon: Package },
+      { name: 'Activity Logs', path: '/admin/logs', icon: History }
     ]
   },
   {

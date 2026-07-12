@@ -86,8 +86,14 @@ export default function Login() {
         // Perform automatic redirection based on role
         setTimeout(() => {
           const userRoles = user.roles || [];
-          if (userRoles.includes('Admin')) {
+          const selectedRole = data.role;
+          
+          if (selectedRole === 'Admin' && userRoles.includes('Admin')) {
             navigate('/admin/dashboard');
+          } else if (selectedRole === 'Asset Manager' && userRoles.includes('Asset Manager')) {
+            navigate('/assets/inventory');
+          } else if (selectedRole === 'HOD' && userRoles.includes('Department Head')) {
+            navigate('/department/dashboard');
           } else {
             navigate('/employee/dashboard');
           }
@@ -193,6 +199,26 @@ export default function Login() {
             </p>
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
+              <div className="space-y-1">
+                <label className="text-sm font-medium">Select Role</label>
+                <select
+                  className={`w-full px-4 py-3 rounded-[20px] border bg-transparent outline-none transition-all ${
+                    errors.role 
+                      ? 'border-red-500 focus:ring-2 focus:ring-red-500/20' 
+                      : 'border-gray-200 dark:border-gray-700 focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20'
+                  }`}
+                  {...register("role", { required: "Role selection is required" })}
+                >
+                  <option value="Employee">Employee</option>
+                  <option value="Admin">Admin</option>
+                  <option value="Asset Manager">Asset Manager</option>
+                  <option value="HOD">HOD</option>
+                </select>
+                {errors.role && (
+                  <p className="text-red-500 text-sm mt-1" role="alert">{errors.role.message}</p>
+                )}
+              </div>
+
               <div className="space-y-1">
                 <label className="text-sm font-medium">Email address</label>
                 <input

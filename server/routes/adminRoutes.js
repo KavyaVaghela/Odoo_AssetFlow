@@ -9,6 +9,7 @@ import { getEmployees, getEmployeeById, createEmployee, updateEmployee, deleteEm
 import { getDepartments, createDepartment, updateDepartment, deleteDepartment } from '../controllers/departmentController.js';
 import { getRoles, createRole, updateRole, deleteRole, assignRoleToEmployee, removeRoleFromEmployee, getPermissions, createPermission, assignPermissionToRole, removePermissionFromRole } from '../controllers/rolePermissionController.js';
 import { getCategories, createCategory, updateCategory, deleteCategory, getSettings, updateSettings, uploadLogo } from '../controllers/categorySettingsController.js';
+import { getActivityLogs } from '../controllers/activityLogController.js';
 
 const router = express.Router();
 
@@ -63,5 +64,8 @@ router.delete('/categories/:id', idParamValidation, validateResult, deleteCatego
 router.get('/settings', getSettings);
 router.put('/settings', updateSettings);
 router.post('/settings/upload-logo', upload.single('logo'), uploadLogo);
+
+// --- Activity Logs ---
+router.get('/logs', getActivityLogs);
 
 export default router;

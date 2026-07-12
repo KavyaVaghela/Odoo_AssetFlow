@@ -16,8 +16,8 @@ export const getRoles = async (req, res, next) => {
 
 export const createRole = async (req, res, next) => {
   try {
-    const { name, description } = req.body;
-    const [result] = await pool.query('INSERT INTO roles (name, description) VALUES (?, ?)', [name, description]);
+    const { role_name, description } = req.body;
+    const [result] = await pool.query('INSERT INTO roles (role_name, description) VALUES (?, ?)', [role_name, description]);
     
     return successResponse(res, 'Role created successfully', { id: result.insertId }, 201);
   } catch (error) {
@@ -28,8 +28,8 @@ export const createRole = async (req, res, next) => {
 export const updateRole = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { name, description } = req.body;
-    await pool.query('UPDATE roles SET name = ?, description = ? WHERE id = ?', [name, description, id]);
+    const { role_name, description } = req.body;
+    await pool.query('UPDATE roles SET role_name = ?, description = ? WHERE id = ?', [role_name, description, id]);
     
     return successResponse(res, 'Role updated successfully');
   } catch (error) {
@@ -50,7 +50,7 @@ export const deleteRole = async (req, res, next) => {
 export const assignRoleToEmployee = async (req, res, next) => {
   try {
     const { user_id, role_id } = req.body;
-    await pool.query('INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)', [user_id, role_id]);
+    await pool.query('INSERT INTO user_roles (user_id, role_id, assigned_by, assigned_date, status) VALUES (?, ?, ?, NOW(), "Active")', [user_id, role_id, req.user.id]);
     
     await logActivity(req.user.id, 'Role Assignment', 'Role Management', `Assigned role ${role_id} to user ${user_id}`, req.ip);
     await createNotification(user_id, 'Role Assigned', 'You have been assigned a new role.');
@@ -85,8 +85,8 @@ export const getPermissions = async (req, res, next) => {
 
 export const createPermission = async (req, res, next) => {
   try {
-    const { name, module } = req.body;
-    const [result] = await pool.query('INSERT INTO permissions (name, module) VALUES (?, ?)', [name, module]);
+    const { permission_name, module_name, description } = req.body;
+    const [result] = await pool.query('INSERT INTO permissions (permission_name, module_name, description) VALUES (?, ?, ?)', [permission_name, module_name, description]);
     
     return successResponse(res, 'Permission created successfully', { id: result.insertId }, 201);
   } catch (error) {

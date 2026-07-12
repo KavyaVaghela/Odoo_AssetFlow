@@ -30,8 +30,8 @@ export const createEmployee = async (req, res, next) => {
     const { first_name, last_name, email, password, phone, department_id, employee_code } = req.body;
     const hashedPassword = await bcrypt.hash(password, 10);
     const query = `
-      INSERT INTO users (first_name, last_name, email, password, phone, department_id, employee_code, status, is_verified) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, 'Active', true)
+      INSERT INTO users (first_name, last_name, email, password_hash, phone, department_id, employee_code, status, approval_status, joining_date) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, 'Active', 'Approved', CURDATE())
     `;
     const [result] = await pool.query(query, [first_name, last_name, email, hashedPassword, phone, department_id, employee_code]);
     
@@ -77,7 +77,7 @@ export const approveEmployee = async (req, res, next) => {
     const [users] = await pool.query('SELECT * FROM users WHERE id = ?', [id]);
     if (users.length === 0) return errorResponse(res, 'Employee not found', [], 404);
     
-    await pool.query('UPDATE users SET status = "Active", is_verified = true WHERE id = ?', [id]);
+    await pool.query('UPDATE users SET status = "Active", approval_status = "Approved" WHERE id = ?', [id]);
     
     await sendApprovalEmail(users[0].email, users[0].first_name);
     await logActivity(req.user.id, 'Approve Employee', 'Employee Management', `Approved employee ID ${id}`, req.ip);
@@ -95,7 +95,7 @@ export const rejectEmployee = async (req, res, next) => {
     const [users] = await pool.query('SELECT * FROM users WHERE id = ?', [id]);
     if (users.length === 0) return errorResponse(res, 'Employee not found', [], 404);
     
-    await pool.query('UPDATE users SET status = "Rejected" WHERE id = ?', [id]);
+    await pool.query('UPDATE users SET status = "Rejected", approval_status = "Rejected" WHERE id = ?', [id]);
     
     await sendRejectionEmail(users[0].email, users[0].first_name);
     await logActivity(req.user.id, 'Reject Employee', 'Employee Management', `Rejected employee ID ${id}`, req.ip);
@@ -129,7 +129,7 @@ export const deactivateEmployee = async (req, res, next) => {
 
 export const getPendingUsers = async (req, res, next) => {
   try {
-    const [rows] = await pool.query('SELECT * FROM users WHERE status = "Pending"');
+    const [rows] = await pool.query('SELECT * FROM users WHERE approval_status = "Pending"');
     return successResponse(res, 'Pending employees fetched successfully', rows);
   } catch (error) {
     next(error);

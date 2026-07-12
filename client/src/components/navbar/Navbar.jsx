@@ -126,7 +126,16 @@ export function Navbar({ toggleTheme, isDark }) {
   const location = useLocation();
   const navigate = useNavigate();
   const pathnames = location.pathname.split('/').filter((x) => x);
-  const { profile, notificationsList } = useStore();
+  const { notificationsList } = useStore();
+  const authUser = JSON.parse(localStorage.getItem('user') || 'null');
+  const storeProfile = useStore(state => state.profile);
+  const profile = authUser ? {
+    name: `${authUser.first_name} ${authUser.last_name}`,
+    email: authUser.email,
+    role: (authUser.roles && authUser.roles[0]) || 'Employee',
+    designation: authUser.designation_name || 'Staff',
+    avatar: authUser.profile_image || ''
+  } : storeProfile;
 
   const unreadCount = notificationsList.filter(n => !n.read).length;
 

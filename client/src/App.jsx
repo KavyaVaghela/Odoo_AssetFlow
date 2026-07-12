@@ -33,10 +33,13 @@ import Reports from './pages/reports/Reports';
 import AuditCycle from './pages/audit/AuditCycle';
 
 // Admin control pages
+import AdminDashboard from './pages/dashboard/AdminDashboard';
 import Employees from './pages/organization/Employees';
+import PendingRegistrations from './pages/organization/PendingRegistrations';
 import Departments from './pages/organization/Departments';
 import Roles from './pages/organization/Roles';
 import Categories from './pages/organization/Categories';
+import ActivityLogs from './pages/organization/ActivityLogs';
 
 // Auth Pages
 import Welcome from './pages/auth/Welcome';
@@ -101,7 +104,16 @@ function App() {
           {/* Dynamic home router */}
           <Route path="/dashboard" element={<DashboardRedirect />} />
           <Route path="/employee/dashboard" element={<Dashboard />} />
-          <Route path="/admin/dashboard" element={<Dashboard />} />
+          
+          {/* Admin Dashboard */}
+          <Route 
+            path="/admin/dashboard" 
+            element={
+              <RoleRoute allowedRoles={['Admin']}>
+                <AdminDashboard />
+              </RoleRoute>
+            } 
+          />
           
           {/* Employee Portal Routes */}
           <Route path="/assets" element={<MyAssets />} />
@@ -245,6 +257,14 @@ function App() {
             } 
           />
           <Route 
+            path="/admin/pending-registrations" 
+            element={
+              <RoleRoute allowedRoles={['Admin']}>
+                <PendingRegistrations />
+              </RoleRoute>
+            } 
+          />
+          <Route 
             path="/admin/departments" 
             element={
               <RoleRoute allowedRoles={['Admin']}>
@@ -265,6 +285,14 @@ function App() {
             element={
               <RoleRoute allowedRoles={['Admin']}>
                 <Categories />
+              </RoleRoute>
+            } 
+          />
+          <Route 
+            path="/admin/logs" 
+            element={
+              <RoleRoute allowedRoles={['Admin']}>
+                <ActivityLogs />
               </RoleRoute>
             } 
           />

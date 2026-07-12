@@ -79,3 +79,39 @@ export const sendPasswordResetSuccessEmail = async (email, name) => {
   const html = `<p>Hi ${name},</p><p>Your password has been successfully updated. You can now log in with your new password.</p>`;
   return sendEmail(email, subject, html);
 };
+
+export const sendBookingApprovedEmail = async (email, name, resourceName) => {
+  const subject = 'AssetFlow - Booking Approved';
+  const html = `<p>Hi ${name},</p><p>Your booking request for ${resourceName} has been approved.</p>`;
+  return sendEmail(email, subject, html);
+};
+
+export const sendBookingRejectedEmail = async (email, name, resourceName) => {
+  const subject = 'AssetFlow - Booking Rejected';
+  const html = `<p>Hi ${name},</p><p>Your booking request for ${resourceName} has been rejected.</p>`;
+  return sendEmail(email, subject, html);
+};
+
+export const sendMaintenanceApprovedEmail = async (email, name, assetName) => {
+  const subject = 'AssetFlow - Maintenance Request Approved';
+  const html = `<p>Hi ${name},</p><p>Your maintenance request for ${assetName} has been approved.</p>`;
+  return sendEmail(email, subject, html);
+};
+
+export const sendMaintenanceCompletedEmail = async (email, name, assetName) => {
+  const subject = 'AssetFlow - Maintenance Completed';
+  const html = `<p>Hi ${name},</p><p>Maintenance on your asset (${assetName}) is now completed.</p>`;
+  return sendEmail(email, subject, html);
+};
+
+export const sendAssetAssignedEmail = async (email, name, assetName) => {
+  const subject = 'AssetFlow - Asset Assigned';
+  const html = `<p>Hi ${name},</p><p>A new asset (${assetName}) has been assigned to you.</p>`;
+  return sendEmail(email, subject, html);
+};
+
+export const sendAssetReturnedEmail = async (email, name, assetName) => {
+  const subject = 'AssetFlow - Asset Returned';
+  const html = `<p>Hi ${name},</p><p>Your return of asset (${assetName}) has been processed successfully.</p>`;
+  return sendEmail(email, subject, html);
+};

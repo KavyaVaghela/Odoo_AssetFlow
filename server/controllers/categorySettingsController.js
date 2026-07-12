@@ -16,11 +16,12 @@ export const getCategories = async (req, res, next) => {
 
 export const createCategory = async (req, res, next) => {
   try {
-    const { name, description } = req.body;
-    const [result] = await pool.query('INSERT INTO asset_categories (name, description) VALUES (?, ?)', [name, description]);
+    const { category_name, category_code, description, icon } = req.body;
+    const [result] = await pool.query(
+      'INSERT INTO asset_categories (category_name, category_code, description, icon, status) VALUES (?, ?, ?, ?, "Active")', 
+      [category_name, category_code, description, icon]
+    );
     
-    await createNotification(0, 'Category Created', `New asset category ${name} was created.`);
-
     return successResponse(res, 'Asset category created successfully', { id: result.insertId }, 201);
   } catch (error) {
     next(error);
@@ -30,8 +31,11 @@ export const createCategory = async (req, res, next) => {
 export const updateCategory = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { name, description } = req.body;
-    await pool.query('UPDATE asset_categories SET name = ?, description = ? WHERE id = ?', [name, description, id]);
+    const { category_name, category_code, description, icon, status } = req.body;
+    await pool.query(
+      'UPDATE asset_categories SET category_name = ?, category_code = ?, description = ?, icon = ?, status = ? WHERE id = ?', 
+      [category_name, category_code, description, icon, status || 'Active', id]
+    );
     
     return successResponse(res, 'Asset category updated successfully');
   } catch (error) {
@@ -63,11 +67,9 @@ export const getSettings = async (req, res, next) => {
 
 export const updateSettings = async (req, res, next) => {
   try {
-    const { theme, organization_name, contact_email } = req.body;
-    // We assume a simple key-value settings table where we update keys individually or a single settings row
-    // For this example, assuming a single row of global settings for the organization
-    const query = 'UPDATE settings SET theme = ?, organization_name = ?, contact_email = ? WHERE id = 1';
-    await pool.query(query, [theme, organization_name, contact_email]);
+    const { theme, organization_name, organization_email, organization_phone, timezone, language } = req.body;
+    const query = 'UPDATE settings SET theme = ?, organization_name = ?, organization_email = ?, organization_phone = ?, timezone = ?, language = ? WHERE id = 1';
+    await pool.query(query, [theme, organization_name, organization_email, organization_phone, timezone, language]);
     
     await logActivity(req.user.id, 'Update Settings', 'Settings Management', 'Updated global settings', req.ip);
 
@@ -84,8 +86,7 @@ export const uploadLogo = async (req, res, next) => {
     }
     
     const logoUrl = `/uploads/${req.file.filename}`;
-    // Assuming a logo_url column in the settings table
-    await pool.query('UPDATE settings SET logo_url = ? WHERE id = 1', [logoUrl]);
+    await pool.query('UPDATE settings SET organization_logo = ? WHERE id = 1', [logoUrl]);
     
     await logActivity(req.user.id, 'Upload Logo', 'Settings Management', 'Uploaded new organization logo', req.ip);
 
