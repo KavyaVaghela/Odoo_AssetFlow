@@ -74,25 +74,80 @@ export default function Login() {
 
   const onSubmit = async (data) => {
     setIsLoading(true);
-    // Simulate network delay for loading state
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setIsLoading(false);
+    try {
+      const response = await fetch('http://localhost:5000/api/admin/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          email: data.email,
+          password: data.password
+        })
+      });
 
-    if (validPersonas.includes(data.email) && data.password) {
+      const result = await response.json();
+      setIsLoading(false);
+
+      if (result.success) {
+        // Persist token and user profile
+        localStorage.setItem('token', result.data.token);
+        localStorage.setItem('user', JSON.stringify(result.data.user));
+
+        showToast({
+          title: "Authentication Successful",
+          description: "Redirecting to Dashboard...",
+        });
+
+        // Redirect to Dashboard
+        setTimeout(() => {
+          if (typeof navigate === 'function') navigate('/dashboard');
+        }, 1000);
+      } else {
+        showToast({
+          variant: "destructive",
+          title: "Authentication Failed",
+          description: result.message || "Invalid email or password. Please try again.",
+        });
+      }
+    } catch (err) {
+      console.warn("Connection to authentication server failed. Logging in using Mock Client Mode.");
+      
+      let role = 'Employee';
+      let name = 'John Smith';
+      let email = data.email || 'employee@assetflow.com';
+      if (email.includes('admin')) {
+        role = 'Admin';
+        name = 'Admin User';
+      } else if (email.includes('manager')) {
+        role = 'Asset Manager';
+        name = 'David Kim';
+      } else if (email.includes('depthead')) {
+        role = 'Department Head';
+        name = 'John Doe';
+      }
+      
+      const mockUser = {
+        id: role === 'Employee' ? 'EMP-1001' : 'EMP-1002',
+        name: name,
+        email: email,
+        role: role,
+        department: 'Computer Engineering',
+        designation: role === 'Employee' ? 'Senior Software Engineer' : role,
+      };
+      
+      localStorage.setItem('token', 'mock-jwt-token');
+      localStorage.setItem('user', JSON.stringify(mockUser));
+      
+      setIsLoading(false);
       showToast({
-        title: "Authentication Successful",
-        description: "Redirecting to Dashboard...",
+        title: "Authentication Successful (Demo Mode)",
+        description: `Logged in as ${name}. Redirecting to Dashboard...`,
       });
-      // Simulate redirect
+      
       setTimeout(() => {
-        if(typeof navigate === 'function') navigate('/dashboard');
+        if (typeof navigate === 'function') navigate('/dashboard');
       }, 1000);
-    } else {
-      showToast({
-        variant: "destructive",
-        title: "Authentication Failed",
-        description: "Invalid email or password. Please try again.",
-      });
     }
   };
 

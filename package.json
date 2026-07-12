@@ -1,5 +1,11 @@
 {
   "name": "assetflow-root",
   "private": true,
-  "version": "1.0.0"
+  "version": "1.0.0",
+  "scripts": {
+    "dev:server": "npm --prefix server run dev",
+    "dev:client": "npm --prefix client run dev",
+    "dev": "npm --prefix server run dev",
+    "start": "npm --prefix server start"
+  }
 }
