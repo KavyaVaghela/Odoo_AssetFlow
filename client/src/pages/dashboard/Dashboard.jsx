@@ -5,20 +5,19 @@ import { useStore } from '@/store/useStore';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import { 
-  PieChart, Pie, Cell, 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  AreaChart, Area
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell
 } from 'recharts';
 import { 
   Package, Calendar, MessageSquare, Wrench, Bell, CheckCircle2, 
-  PlusCircle, Sparkles, Clock, CalendarDays, Edit3, Send, X, ArrowRight, UserCheck, AlertTriangle, HelpCircle
+  PlusCircle, Sparkles, Clock, CalendarDays, Edit3, Send, X, ArrowRight, UserCheck, AlertTriangle, Users, Activity
 } from 'lucide-react';
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const { profile, employeeAssets, bookings, maintenanceRequests, myRequests, notificationsList } = useStore();
+  const { profile, departmentEmployees, departmentAssets, allocationApprovals, transferApprovals, bookings, maintenanceRequests } = useStore();
   
   // Real-time Clock State
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -28,16 +27,16 @@ export default function Dashboard() {
   }, []);
 
   // Quick Notes State
-  const [note, setNote] = useState(localStorage.getItem('dashboard_note') || '💡 Prepare for Q3 physical asset audit checklist.');
+  const [note, setNote] = useState(localStorage.getItem('hod_note') || '💡 Reminder: Sign off on Wacom Tablet allocation before board meeting.');
   const handleSaveNote = (e) => {
     setNote(e.target.value);
-    localStorage.setItem('dashboard_note', e.target.value);
+    localStorage.setItem('hod_note', e.target.value);
   };
 
   // AI Assistant States
   const [isAiOpen, setIsAiOpen] = useState(false);
   const [aiMessages, setAiMessages] = useState([
-    { sender: 'ai', text: `Hello John Smith! I am your AssetFlow AI Assistant. How can I help you manage your resources today?` }
+    { sender: 'ai', text: `Hello Dr. Rajesh Patel! I am your AssetFlow HOD Assistant. How can I help you optimize your department resources today?` }
   ]);
   const [aiInput, setAiInput] = useState('');
 
@@ -47,53 +46,51 @@ export default function Dashboard() {
     const userMsg = { sender: 'user', text };
     setAiMessages(prev => [...prev, userMsg]);
     
-    // Generate AI response
     let responseText = '';
     const cleanText = text.toLowerCase();
     
-    if (cleanText.includes('return') && cleanText.includes('laptop')) {
-      const laptop = employeeAssets.find(a => a.name.toLowerCase().includes('laptop'));
+    if (cleanText.includes('pending') || cleanText.includes('approval')) {
+      const count = allocationApprovals.length + transferApprovals.length;
+      responseText = `You currently have ${count} pending approvals. ${allocationApprovals.length} allocation requests and ${transferApprovals.length} asset transfer requests.`;
+    } else if (cleanText.includes('department asset') || cleanText.includes('dept asset')) {
+      responseText = `The Computer Engineering department has ${departmentAssets.length} registered hardware assets currently active in the ledger.`;
+    } else if (cleanText.includes('laptop af-021') || cleanText.includes('af-021')) {
+      const laptop = departmentAssets.find(a => a.code === 'AST-AF-021');
       responseText = laptop 
-        ? `Your assigned ${laptop.name} (Code: ${laptop.code}) is scheduled for return on ${laptop.returnDate} (Tomorrow).`
-        : `I could not locate an assigned laptop in your records. Please check the 'My Assets' section.`;
-    } else if (cleanText.includes('assets') || cleanText.includes('show my asset')) {
-      const names = employeeAssets.map(a => `${a.name} (${a.code})`).join(', ');
-      responseText = `You currently have ${employeeAssets.length} assets assigned to you: ${names}.`;
+        ? `Apple MacBook Pro 16 (AST-AF-021) is currently allocated to ${laptop.holder} at location ${laptop.location}.`
+        : `I could not locate an asset with code AST-AF-021 in the department registry.`;
+    } else if (cleanText.includes('report') || cleanText.includes('generate')) {
+      responseText = `Opening the Department Reports and Analytics center...`;
+      setTimeout(() => navigate('/department/reports'), 1500);
     } else if (cleanText.includes('book') && cleanText.includes('room')) {
-      responseText = `Redirecting you to the Resource Booking portal...`;
+      responseText = `Opening the Resource Booking view...`;
       setTimeout(() => navigate('/booking'), 1500);
-    } else if (cleanText.includes('maintenance')) {
-      responseText = `Opening the Maintenance ticketing portal...`;
-      setTimeout(() => navigate('/maintenance'), 1500);
-    } else if (cleanText.includes('history')) {
-      responseText = `Opening your Booking History log...`;
-      setTimeout(() => navigate('/booking-history'), 1500);
-    } else if (cleanText.includes('request') && cleanText.includes('asset')) {
-      responseText = `Opening the new resource request forms...`;
-      setTimeout(() => navigate('/requests'), 1500);
+    } else if (cleanText.includes('today') && cleanText.includes('booking')) {
+      responseText = `Today's active bookings include: Meeting Room A reserved by Priya Patel (14:00 - 15:00) and Cisco Networking Lab reserved by Rohan Mehta.`;
     } else {
-      responseText = `I understand you want: "${text}". As an asset assistant, I can check your return dues, list assets, or redirect you to booking, requests, and maintenance forms. What would you like to verify?`;
+      responseText = `I understand you want to check: "${text}". I can fetch allocation details, check pending approvals, look up asset holders, or direct you to HOD management screens.`;
     }
 
     setTimeout(() => {
       setAiMessages(prev => [...prev, { sender: 'ai', text: responseText }]);
-    }, 800);
+    }, 850);
   };
 
   // Recharts custom charts
   const categoryData = [
-    { name: 'Allocated', value: employeeAssets.length, color: '#2563EB' },
-    { name: 'Bookings', value: bookings.length, color: '#10B981' },
-    { name: 'Maintenance', value: maintenanceRequests.length, color: '#F59E0B' },
+    { name: 'Allocated', value: departmentAssets.length, color: '#2563EB' },
+    { name: 'Under Maintenance', value: kpiData.maintenanceAssets, color: '#F59E0B' },
+    { name: 'Available', value: kpiData.availableAssets, color: '#10B981' },
   ];
 
-  const requestTimelineData = [
-    { name: 'Mon', requests: 1, resolved: 1 },
-    { name: 'Tue', requests: 2, resolved: 1 },
-    { name: 'Wed', requests: 0, resolved: 0 },
-    { name: 'Thu', requests: 4, resolved: 2 },
-    { name: 'Fri', requests: 2, resolved: 3 },
+  const utilizationTrends = [
+    { name: 'Wk 1', rate: 76 },
+    { name: 'Wk 2', rate: 78 },
+    { name: 'Wk 3', rate: 80 },
+    { name: 'Wk 4', rate: 82.5 },
   ];
+
+  const pendingApprovalsCount = allocationApprovals.length + transferApprovals.length;
 
   return (
     <div className="space-y-6 pb-12 relative">
@@ -119,8 +116,8 @@ export default function Dashboard() {
                 {profile.role}
               </Badge>
             </div>
-            <p className="text-sm text-blue-100/90 font-medium mt-1">
-              {profile.designation} • {profile.department} • ID: <span className="font-mono text-xs">{profile.id}</span>
+            <p className="text-xs md:text-sm text-blue-100/90 font-medium mt-1">
+              Department: {profile.department} (Code: CE-001) • Office Extension: {profile.phone}
             </p>
           </div>
         </div>
@@ -131,167 +128,178 @@ export default function Dashboard() {
             <Clock className="w-3.5 h-3.5" />
             Current Time
           </span>
-          <span className="text-2xl font-bold font-mono tracking-tight mt-1">
+          <span className="text-xl md:text-2xl font-bold font-mono tracking-tight mt-1">
             {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
           </span>
-          <span className="text-xs text-blue-100/80 mt-0.5">
+          <span className="text-xs text-blue-100/85 mt-0.5">
             {currentTime.toLocaleDateString(undefined, { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}
           </span>
         </div>
       </motion.div>
 
-      {/* Statistics Cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
-        <Card className="glass border-l-4 border-l-blue-600 rounded-2xl hover:shadow-md transition-shadow">
+      {/* Animated KPI Statistics Cards */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-7">
+        <Card className="glass border-l-4 border-l-blue-600 rounded-2xl">
           <CardHeader className="flex flex-row items-center justify-between pb-1 pt-4 px-4">
-            <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">My Assets</CardTitle>
-            <Package className="h-4 w-4 text-blue-500" />
+            <CardTitle className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">Dept Employees</CardTitle>
+            <Users className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent className="px-4 pb-4">
-            <div className="text-2xl font-bold">{employeeAssets.length}</div>
-            <p className="text-[10px] text-muted-foreground mt-0.5">Assigned to you</p>
+            <div className="text-2xl font-bold">25</div>
+            <p className="text-[10px] text-muted-foreground mt-0.5">Reporting faculty</p>
           </CardContent>
         </Card>
 
-        <Card className="glass border-l-4 border-l-emerald-500 rounded-2xl hover:shadow-md transition-shadow">
+        <Card className="glass border-l-4 border-l-emerald-500 rounded-2xl">
           <CardHeader className="flex flex-row items-center justify-between pb-1 pt-4 px-4">
-            <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Bookings</CardTitle>
-            <Calendar className="h-4 w-4 text-emerald-500" />
+            <CardTitle className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">Dept Assets</CardTitle>
+            <Package className="h-4 w-4 text-emerald-500" />
           </CardHeader>
           <CardContent className="px-4 pb-4">
-            <div className="text-2xl font-bold">{bookings.length}</div>
-            <p className="text-[10px] text-muted-foreground mt-0.5">Reservations active</p>
+            <div className="text-2xl font-bold">120</div>
+            <p className="text-[10px] text-muted-foreground mt-0.5">Registered items</p>
           </CardContent>
         </Card>
 
-        <Card className="glass border-l-4 border-l-orange-500 rounded-2xl hover:shadow-md transition-shadow">
+        <Card className="glass border-l-4 border-l-orange-500 rounded-2xl">
           <CardHeader className="flex flex-row items-center justify-between pb-1 pt-4 px-4">
-            <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Maintenance</CardTitle>
-            <Wrench className="h-4 w-4 text-orange-500" />
+            <CardTitle className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">Pending Approvals</CardTitle>
+            <CheckCircle2 className="h-4 w-4 text-orange-500" />
           </CardHeader>
           <CardContent className="px-4 pb-4">
-            <div className="text-2xl font-bold">{maintenanceRequests.filter(r => r.status === 'Pending').length}</div>
-            <p className="text-[10px] text-muted-foreground mt-0.5">Pending tickets</p>
+            <div className="text-2xl font-bold">{pendingApprovalsCount}</div>
+            <p className="text-[10px] text-muted-foreground mt-0.5">Allocation/transfer</p>
           </CardContent>
         </Card>
 
-        <Card className="glass border-l-4 border-l-indigo-500 rounded-2xl hover:shadow-md transition-shadow">
+        <Card className="glass border-l-4 border-l-indigo-500 rounded-2xl">
           <CardHeader className="flex flex-row items-center justify-between pb-1 pt-4 px-4">
-            <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Asset Requests</CardTitle>
-            <MessageSquare className="h-4 w-4 text-indigo-500" />
+            <CardTitle className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">Today's Bookings</CardTitle>
+            <Calendar className="h-4 w-4 text-indigo-500" />
           </CardHeader>
           <CardContent className="px-4 pb-4">
-            <div className="text-2xl font-bold">{myRequests.length}</div>
-            <p className="text-[10px] text-muted-foreground mt-0.5">In ledger list</p>
+            <div className="text-2xl font-bold">3</div>
+            <p className="text-[10px] text-muted-foreground mt-0.5">Rooms & vehicles</p>
           </CardContent>
         </Card>
 
-        <Card className="glass border-l-4 border-l-purple-500 rounded-2xl hover:shadow-md transition-shadow">
+        <Card className="glass border-l-4 border-l-purple-500 rounded-2xl">
           <CardHeader className="flex flex-row items-center justify-between pb-1 pt-4 px-4">
-            <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Alerts</CardTitle>
-            <Bell className="h-4 w-4 text-purple-500" />
+            <CardTitle className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">Maintenance</CardTitle>
+            <Wrench className="h-4 w-4 text-purple-500" />
           </CardHeader>
           <CardContent className="px-4 pb-4">
-            <div className="text-2xl font-bold">{notificationsList.filter(n => !n.read).length}</div>
-            <p className="text-[10px] text-muted-foreground mt-0.5">Unread messages</p>
+            <div className="text-2xl font-bold">4</div>
+            <p className="text-[10px] text-muted-foreground mt-0.5">Active repair requests</p>
           </CardContent>
         </Card>
 
-        <Card className="glass border-l-4 border-l-slate-400 rounded-2xl hover:shadow-md transition-shadow">
+        <Card className="glass border-l-4 border-l-amber-500 rounded-2xl">
           <CardHeader className="flex flex-row items-center justify-between pb-1 pt-4 px-4">
-            <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Resources</CardTitle>
-            <Sparkles className="h-4 w-4 text-slate-500" />
+            <CardTitle className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">Active Resources</CardTitle>
+            <Activity className="h-4 w-4 text-amber-500" />
           </CardHeader>
           <CardContent className="px-4 pb-4">
-            <div className="text-2xl font-bold">18</div>
-            <p className="text-[10px] text-muted-foreground mt-0.5">Catalog units</p>
+            <div className="text-2xl font-bold">6</div>
+            <p className="text-[10px] text-muted-foreground mt-0.5">Meeting halls & labs</p>
+          </CardContent>
+        </Card>
+
+        <Card className="glass border-l-4 border-l-slate-400 rounded-2xl">
+          <CardHeader className="flex flex-row items-center justify-between pb-1 pt-4 px-4">
+            <CardTitle className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">Utilization</CardTitle>
+            <Activity className="h-4 w-4 text-slate-500" />
+          </CardHeader>
+          <CardContent className="px-4 pb-4">
+            <div className="text-2xl font-bold">82.5%</div>
+            <p className="text-[10px] text-muted-foreground mt-0.5">Asset utilization</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Today's Command Center */}
+      {/* Today's Actions (Priority Cards) */}
       <Card className="rounded-2xl border-border/50 glass">
         <CardHeader className="p-5 border-b">
           <CardTitle className="text-sm font-bold flex items-center gap-1.5">
             <CheckCircle2 className="w-4 h-4 text-primary" />
-            Today's Command Center
+            Today's HOD Action Items
           </CardTitle>
-          <CardDescription className="text-xs">Urgent items requiring verification or attention.</CardDescription>
+          <CardDescription className="text-xs">Critical operations awaiting sign-off or administrative verification.</CardDescription>
         </CardHeader>
         <CardContent className="p-5">
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-            {/* Action Card 1 */}
+            {/* Card 1 */}
             <div className="p-4 rounded-xl border bg-card flex flex-col justify-between h-36">
               <div>
                 <div className="flex justify-between items-center mb-2">
-                  <Badge className="bg-red-500/10 text-red-600 border border-red-500/20 text-[8px] px-1.5 rounded-full font-bold uppercase">CRITICAL</Badge>
-                  <Clock className="w-3.5 h-3.5 text-red-500" />
+                  <Badge className="bg-red-500/10 text-red-600 border-red-500/20 text-[8px] px-1.5 rounded-full font-bold uppercase">ALLOCATION</Badge>
+                  <AlertTriangle className="w-3.5 h-3.5 text-red-500" />
                 </div>
-                <h4 className="font-bold text-xs">Return Laptop</h4>
-                <p className="text-[10px] text-muted-foreground mt-1">Dell Latitude 5440 due.</p>
+                <h4 className="font-bold text-xs">Approve Allocations</h4>
+                <p className="text-[10px] text-muted-foreground mt-1">{allocationApprovals.length} pending requests.</p>
               </div>
-              <Button size="sm" variant="link" className="p-0 h-auto text-[10px] text-primary font-bold self-start mt-2" onClick={() => navigate('/assets')}>
-                View Asset <ArrowRight className="w-2.5 h-2.5 ml-0.5" />
+              <Button size="sm" variant="link" className="p-0 h-auto text-[10px] text-primary font-bold self-start mt-2" onClick={() => navigate('/department/allocation-approvals')}>
+                Review List <ArrowRight className="w-2.5 h-2.5 ml-0.5" />
               </Button>
             </div>
 
-            {/* Action Card 2 */}
+            {/* Card 2 */}
             <div className="p-4 rounded-xl border bg-card flex flex-col justify-between h-36">
               <div>
                 <div className="flex justify-between items-center mb-2">
-                  <Badge className="bg-blue-500/10 text-blue-600 border border-blue-500/20 text-[8px] px-1.5 rounded-full font-bold uppercase">SCHEDULED</Badge>
-                  <CalendarDays className="w-3.5 h-3.5 text-blue-500" />
+                  <Badge className="bg-blue-500/10 text-blue-600 border-blue-500/20 text-[8px] px-1.5 rounded-full font-bold uppercase">OWNERSHIP</Badge>
+                  <Users className="w-3.5 h-3.5 text-blue-500" />
                 </div>
-                <h4 className="font-bold text-xs">Meeting Room A</h4>
-                <p className="text-[10px] text-muted-foreground mt-1">Sync starts at 2:00 PM.</p>
+                <h4 className="font-bold text-xs">Transfer Approvals</h4>
+                <p className="text-[10px] text-muted-foreground mt-1">{transferApprovals.length} transfers in queue.</p>
               </div>
-              <Button size="sm" variant="link" className="p-0 h-auto text-[10px] text-primary font-bold self-start mt-2" onClick={() => navigate('/booking-history')}>
-                View Booking <ArrowRight className="w-2.5 h-2.5 ml-0.5" />
+              <Button size="sm" variant="link" className="p-0 h-auto text-[10px] text-primary font-bold self-start mt-2" onClick={() => navigate('/department/transfer-approvals')}>
+                Review List <ArrowRight className="w-2.5 h-2.5 ml-0.5" />
               </Button>
             </div>
 
-            {/* Action Card 3 */}
+            {/* Card 3 */}
             <div className="p-4 rounded-xl border bg-card flex flex-col justify-between h-36">
               <div>
                 <div className="flex justify-between items-center mb-2">
-                  <Badge className="bg-amber-500/10 text-amber-600 border border-amber-500/20 text-[8px] px-1.5 rounded-full font-bold uppercase">PENDING</Badge>
-                  <Wrench className="w-3.5 h-3.5 text-amber-500" />
+                  <Badge className="bg-orange-500/10 text-orange-600 border-orange-500/20 text-[8px] px-1.5 rounded-full font-bold uppercase">MAINTENANCE</Badge>
+                  <Wrench className="w-3.5 h-3.5 text-orange-500" />
                 </div>
-                <h4 className="font-bold text-xs">Maintenance Check</h4>
-                <p className="text-[10px] text-muted-foreground mt-1">Pending support approval.</p>
+                <h4 className="font-bold text-xs">Maintenance Approval</h4>
+                <p className="text-[10px] text-muted-foreground mt-1">4 pending repair tasks.</p>
               </div>
               <Button size="sm" variant="link" className="p-0 h-auto text-[10px] text-primary font-bold self-start mt-2" onClick={() => navigate('/maintenance')}>
-                Check Status <ArrowRight className="w-2.5 h-2.5 ml-0.5" />
+                Check Queue <ArrowRight className="w-2.5 h-2.5 ml-0.5" />
               </Button>
             </div>
 
-            {/* Action Card 4 */}
+            {/* Card 4 */}
             <div className="p-4 rounded-xl border bg-card flex flex-col justify-between h-36">
               <div>
                 <div className="flex justify-between items-center mb-2">
-                  <Badge className="bg-indigo-500/10 text-indigo-600 border border-indigo-500/20 text-[8px] px-1.5 rounded-full font-bold uppercase">VERIFICATION</Badge>
-                  <UserCheck className="w-3.5 h-3.5 text-indigo-500" />
+                  <Badge className="bg-indigo-500/10 text-indigo-600 border-indigo-500/20 text-[8px] px-1.5 rounded-full font-bold uppercase">ANALYTICS</Badge>
+                  <Activity className="w-3.5 h-3.5 text-indigo-500" />
                 </div>
-                <h4 className="font-bold text-xs">Physical Audit</h4>
-                <p className="text-[10px] text-muted-foreground mt-1">Verification starting Monday.</p>
+                <h4 className="font-bold text-xs">Review Dept Report</h4>
+                <p className="text-[10px] text-muted-foreground mt-1">Check June monthly totals.</p>
               </div>
-              <Button size="sm" variant="link" className="p-0 h-auto text-[10px] text-primary font-bold self-start mt-2" onClick={() => navigate('/notifications')}>
-                Read Details <ArrowRight className="w-2.5 h-2.5 ml-0.5" />
+              <Button size="sm" variant="link" className="p-0 h-auto text-[10px] text-primary font-bold self-start mt-2" onClick={() => navigate('/department/reports')}>
+                View Analytics <ArrowRight className="w-2.5 h-2.5 ml-0.5" />
               </Button>
             </div>
 
-            {/* Action Card 5 */}
+            {/* Card 5 */}
             <div className="p-4 rounded-xl border bg-card flex flex-col justify-between h-36">
               <div>
                 <div className="flex justify-between items-center mb-2">
-                  <Badge className="bg-purple-500/10 text-purple-600 border border-purple-500/20 text-[8px] px-1.5 rounded-full font-bold uppercase">ANNOUNCEMENT</Badge>
-                  <Bell className="w-3.5 h-3.5 text-purple-500" />
+                  <Badge className="bg-purple-500/10 text-purple-600 border-purple-500/20 text-[8px] px-1.5 rounded-full font-bold uppercase">MEETING</Badge>
+                  <CalendarDays className="w-3.5 h-3.5 text-purple-500" />
                 </div>
-                <h4 className="font-bold text-xs">New Dept Structure</h4>
-                <p className="text-[10px] text-muted-foreground mt-1">Announced by HR today.</p>
+                <h4 className="font-bold text-xs">HOD Council Meeting</h4>
+                <p className="text-[10px] text-muted-foreground mt-1">Agenda: Budget allocation.</p>
               </div>
-              <Button size="sm" variant="link" className="p-0 h-auto text-[10px] text-primary font-bold self-start mt-2" onClick={() => navigate('/notifications')}>
-                Read Notice <ArrowRight className="w-2.5 h-2.5 ml-0.5" />
+              <Button size="sm" variant="link" className="p-0 h-auto text-[10px] text-primary font-bold self-start mt-2" onClick={() => navigate('/department/calendar')}>
+                View Calendar <ArrowRight className="w-2.5 h-2.5 ml-0.5" />
               </Button>
             </div>
           </div>
@@ -300,44 +308,39 @@ export default function Dashboard() {
 
       <div className="grid gap-6 md:grid-cols-7">
         
-        {/* Resource Allocation Breakdown Chart */}
+        {/* Recharts Department Utilization Chart */}
         <Card className="md:col-span-4 rounded-2xl border-border/50 glass">
           <CardHeader className="p-5 border-b">
             <CardTitle className="text-sm font-bold flex items-center gap-1.5">
-              <Calendar className="w-4 h-4 text-primary" />
-              Corporate Resource Allocation Breakdown
+              <Activity className="w-4 h-4 text-primary" />
+              Department Resource Utilization Trend
             </CardTitle>
-            <CardDescription className="text-xs font-medium">Utilization records of software, hardware, and physical meeting rooms.</CardDescription>
+            <CardDescription className="text-xs">Weekly active usage capacity statistics for the current month.</CardDescription>
           </CardHeader>
           <CardContent className="h-[280px] p-5">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={requestTimelineData}>
+              <AreaChart data={utilizationTrends}>
                 <defs>
-                  <linearGradient id="colorRequests" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#2563EB" stopOpacity={0.2}/>
+                  <linearGradient id="colorRate" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#2563EB" stopOpacity={0.25}/>
                     <stop offset="95%" stopColor="#2563EB" stopOpacity={0}/>
-                  </linearGradient>
-                  <linearGradient id="colorResolved" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10B981" stopOpacity={0.2}/>
-                    <stop offset="95%" stopColor="#10B981" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
                 <XAxis dataKey="name" fontSize={11} stroke="hsl(var(--muted-foreground))" tickLine={false} axisLine={false} />
                 <YAxis fontSize={11} stroke="hsl(var(--muted-foreground))" tickLine={false} axisLine={false} />
                 <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--background))', borderColor: 'hsl(var(--border))', borderRadius: '12px' }} />
-                <Area type="monotone" dataKey="requests" stroke="#2563EB" strokeWidth={2.5} fillOpacity={1} fill="url(#colorRequests)" />
-                <Area type="monotone" dataKey="resolved" stroke="#10B981" strokeWidth={2.5} fillOpacity={1} fill="url(#colorResolved)" />
+                <Area type="monotone" dataKey="rate" stroke="#2563EB" strokeWidth={2.5} fillOpacity={1} fill="url(#colorRate)" name="Utilization Rate (%)" />
               </AreaChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
 
-        {/* Categories Distribution */}
+        {/* State Categories Distribution Pie Chart */}
         <Card className="md:col-span-3 rounded-2xl border-border/50 glass">
           <CardHeader className="p-5 border-b">
-            <CardTitle className="text-sm font-bold">State Distribution Chart</CardTitle>
-            <CardDescription className="text-xs">Summary ratio of your items on dashboard state.</CardDescription>
+            <CardTitle className="text-sm font-bold">Category Distribution</CardTitle>
+            <CardDescription className="text-xs">Overview ratio of department asset allocation.</CardDescription>
           </CardHeader>
           <CardContent className="h-[280px] flex items-center justify-center p-5">
             <div className="w-full h-full relative">
@@ -347,7 +350,7 @@ export default function Dashboard() {
                     data={categoryData}
                     cx="50%"
                     cy="50%"
-                    innerRadius={50}
+                    innerRadius={52}
                     outerRadius={80}
                     paddingAngle={6}
                     dataKey="value"
@@ -359,11 +362,11 @@ export default function Dashboard() {
                   <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--background))', borderColor: 'hsl(var(--border))', borderRadius: '12px' }} />
                 </PieChart>
               </ResponsiveContainer>
-              <div className="absolute bottom-2 flex justify-center gap-4 w-full text-xs">
+              <div className="absolute bottom-1 flex flex-wrap justify-center gap-x-4 gap-y-1 w-full text-[10px] font-medium">
                 {categoryData.map(c => (
-                  <div key={c.name} className="flex items-center gap-1.5">
-                    <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: c.color }} />
-                    <span className="font-medium text-muted-foreground">{c.name} ({c.value})</span>
+                  <div key={c.name} className="flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: c.color }} />
+                    <span className="text-muted-foreground">{c.name} ({c.value})</span>
                   </div>
                 ))}
               </div>
@@ -373,14 +376,14 @@ export default function Dashboard() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-3">
-        {/* Quick Notes Widget */}
+        {/* Quick Notes */}
         <Card className="rounded-2xl border-border/50 glass">
           <CardHeader className="p-4 border-b">
             <CardTitle className="text-sm font-bold flex items-center gap-1.5">
               <Edit3 className="w-4 h-4 text-primary" />
               Quick Notes
             </CardTitle>
-            <CardDescription className="text-[11px]">Save quick drafts (stored locally in browser cache).</CardDescription>
+            <CardDescription className="text-[11px]">HOD quick reminders notebook (stored locally).</CardDescription>
           </CardHeader>
           <CardContent className="p-4">
             <textarea
@@ -392,24 +395,34 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        {/* Resource Availability Status */}
+        {/* Resource Availability */}
         <Card className="rounded-2xl border-border/50 glass">
           <CardHeader className="p-4 border-b">
             <CardTitle className="text-sm font-bold flex items-center gap-1.5">
               <Calendar className="w-4 h-4 text-primary" />
-              Resource Occupancy
+              Active Resources Status
             </CardTitle>
-            <CardDescription className="text-[11px]">Availability levels of primary rooms and vehicles.</CardDescription>
+            <CardDescription className="text-[11px]">Real-time availability of rooms and vehicles.</CardDescription>
           </CardHeader>
-          <CardContent className="p-4 space-y-3">
-            <div className="space-y-2">
+          <CardContent className="p-4 space-y-3.5">
+            <div className="space-y-2.5">
               <div>
                 <div className="flex justify-between text-xs font-semibold mb-1">
-                  <span>Meeting Rooms</span>
-                  <span className="text-emerald-500 font-bold">4 Available</span>
+                  <span>Seminar & Meeting Halls</span>
+                  <span className="text-emerald-500 font-bold">2 Available</span>
                 </div>
                 <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                  <div className="h-full bg-emerald-500 rounded-full" style={{ width: '80%' }} />
+                  <div className="h-full bg-emerald-500 rounded-full" style={{ width: '66%' }} />
+                </div>
+              </div>
+
+              <div>
+                <div className="flex justify-between text-xs font-semibold mb-1">
+                  <span>IoT & Cisco Labs</span>
+                  <span className="text-emerald-500 font-bold">3 Available</span>
+                </div>
+                <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                  <div className="h-full bg-emerald-500 rounded-full" style={{ width: '75%' }} />
                 </div>
               </div>
 
@@ -422,16 +435,6 @@ export default function Dashboard() {
                   <div className="h-full bg-orange-500 rounded-full" style={{ width: '33%' }} />
                 </div>
               </div>
-
-              <div>
-                <div className="flex justify-between text-xs font-semibold mb-1">
-                  <span>Equipment Projectors</span>
-                  <span className="text-emerald-500 font-bold">8 Available</span>
-                </div>
-                <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                  <div className="h-full bg-emerald-500 rounded-full" style={{ width: '90%' }} />
-                </div>
-              </div>
             </div>
           </CardContent>
         </Card>
@@ -441,31 +444,31 @@ export default function Dashboard() {
           <CardHeader className="p-4 border-b">
             <CardTitle className="text-sm font-bold flex items-center gap-1.5">
               <Clock className="w-4 h-4 text-primary" />
-              Recent Operations Log
+              Operations Activities Log
             </CardTitle>
-            <CardDescription className="text-[11px]">Latest ledger entries regarding your assignments.</CardDescription>
+            <CardDescription className="text-[11px]">Timeline logs of recent department allocations.</CardDescription>
           </CardHeader>
           <CardContent className="p-4">
             <div className="space-y-4">
               <div className="flex gap-3 items-start text-xs">
-                <div className="mt-1 w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0 shadow" />
+                <div className="mt-1 w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0 shadow animate-pulse" />
                 <div>
-                  <p className="font-semibold text-foreground">Laptop Return scheduled</p>
-                  <p className="text-[10px] text-muted-foreground">Dell Latitude 5440 due on 2026-07-13</p>
+                  <p className="font-semibold text-foreground">Amit Sharma booked IoT Lab</p>
+                  <p className="text-[9px] text-muted-foreground">Booking Confirmed for July 12, 10:00 AM</p>
                 </div>
               </div>
               <div className="flex gap-3 items-start text-xs">
                 <div className="mt-1 w-2.5 h-2.5 rounded-full bg-blue-500 shrink-0 shadow" />
                 <div>
-                  <p className="font-semibold text-foreground">Meeting Room A Booked</p>
-                  <p className="text-[10px] text-muted-foreground">Reserved today at 2:00 PM for team sync</p>
+                  <p className="font-semibold text-foreground">Workstation transfer approved</p>
+                  <p className="text-[9px] text-muted-foreground">Priya Patel to Vikram Singh (AST-AF-022)</p>
                 </div>
               </div>
               <div className="flex gap-3 items-start text-xs">
                 <div className="mt-1 w-2.5 h-2.5 rounded-full bg-orange-500 shrink-0 shadow" />
                 <div>
-                  <p className="font-semibold text-foreground">Maintenance ticket raised</p>
-                  <p className="text-[10px] text-muted-foreground">Laptop battery drain ticket is Pending support approval</p>
+                  <p className="font-semibold text-foreground">New Maintenance Ticket Raised</p>
+                  <p className="text-[9px] text-muted-foreground">HP LaserJet Printer M-203 resolution Pending</p>
                 </div>
               </div>
             </div>
@@ -473,7 +476,7 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      {/* Floating AI Assistant */}
+      {/* Floating HOD AI Assistant */}
       <div className="fixed bottom-6 right-6 z-40">
         <AnimatePresence>
           {isAiOpen && (
@@ -488,8 +491,8 @@ export default function Dashboard() {
                 <div className="flex items-center gap-2">
                   <Sparkles className="w-5 h-5 text-yellow-300 animate-pulse" />
                   <div>
-                    <h3 className="font-bold text-sm">AssetFlow AI Assistant</h3>
-                    <p className="text-[10px] text-blue-100">Workspace Support Bot</p>
+                    <h3 className="font-bold text-sm">AssetFlow HOD Assistant</h3>
+                    <p className="text-[10px] text-blue-100">Department Management Bot</p>
                   </div>
                 </div>
                 <button onClick={() => setIsAiOpen(false)} className="hover:text-blue-200">
@@ -512,31 +515,31 @@ export default function Dashboard() {
                 ))}
               </div>
 
-              {/* Suggested prompts list */}
-              <div className="px-4 py-2 bg-muted/20 border-t flex flex-wrap gap-1.5 text-[10px]">
+              {/* Suggested HOD prompts */}
+              <div className="px-4 py-2 bg-muted/20 border-t flex flex-wrap gap-1.5 text-[9px]">
                 <button 
-                  onClick={() => sendAiMessage("When should I return my laptop?")} 
+                  onClick={() => sendAiMessage("Show pending approvals")} 
                   className="px-2 py-1 bg-background hover:bg-accent border rounded-full text-muted-foreground font-semibold cursor-pointer"
                 >
-                  ⏳ Return Laptop Due?
+                  📝 Show Approvals
                 </button>
                 <button 
-                  onClick={() => sendAiMessage("Show My Assets")} 
+                  onClick={() => sendAiMessage("Show department assets")} 
                   className="px-2 py-1 bg-background hover:bg-accent border rounded-full text-muted-foreground font-semibold cursor-pointer"
                 >
                   💻 Show Assets
                 </button>
                 <button 
-                  onClick={() => sendAiMessage("Book Meeting Room")} 
+                  onClick={() => sendAiMessage("Which employee has Laptop AF-021?")} 
                   className="px-2 py-1 bg-background hover:bg-accent border rounded-full text-muted-foreground font-semibold cursor-pointer"
                 >
-                  📅 Book Room
+                  🔍 Who has Laptop AF-021?
                 </button>
                 <button 
-                  onClick={() => sendAiMessage("Raise Maintenance")} 
+                  onClick={() => sendAiMessage("Generate department report")} 
                   className="px-2 py-1 bg-background hover:bg-accent border rounded-full text-muted-foreground font-semibold cursor-pointer"
                 >
-                  🔧 Raise Maintenance
+                  📊 Show Reports
                 </button>
               </div>
 
@@ -546,7 +549,7 @@ export default function Dashboard() {
                 className="p-3 border-t bg-muted/40 flex gap-2"
               >
                 <Input
-                  placeholder="Ask a question about your assets..."
+                  placeholder="Ask about approvals, asset holders..."
                   value={aiInput}
                   onChange={(e) => setAiInput(e.target.value)}
                   className="h-9 rounded-xl text-xs bg-background"
@@ -559,7 +562,7 @@ export default function Dashboard() {
           )}
         </AnimatePresence>
 
-        {/* Floating action button button toggler */}
+        {/* Floating action button */}
         <motion.button
           onClick={() => setIsAiOpen(!isAiOpen)}
           whileHover={{ scale: 1.05 }}
@@ -573,3 +576,8 @@ export default function Dashboard() {
     </div>
   );
 }
+
+const kpiData = {
+  maintenanceAssets: 4,
+  availableAssets: 41,
+};
