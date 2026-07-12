@@ -1,21 +1,19 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   LayoutDashboard, 
-  Building2, 
-  Users, 
-  Tags, 
-  ShieldCheck, 
   Package, 
-  BarChart3, 
-  FileCheck2, 
+  Calendar, 
+  History, 
+  Wrench, 
+  MessageSquare, 
   Bell, 
-  Activity, 
-  Settings,
+  User, 
+  Settings, 
+  LogOut,
   ChevronLeft,
-  ChevronRight,
-  ChevronDown
+  ChevronRight
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -27,27 +25,20 @@ const navGroups = [
     ]
   },
   {
-    title: 'Organization',
-    items: [
-      { name: 'Departments', path: '/departments', icon: Building2 },
-      { name: 'Employees', path: '/employees', icon: Users },
-      { name: 'Categories', path: '/categories', icon: Tags },
-      { name: 'Role Management', path: '/roles', icon: ShieldCheck },
-    ]
-  },
-  {
     title: 'Operations',
     items: [
-      { name: 'Assets', path: '/assets', icon: Package },
-      { name: 'Reports', path: '/reports', icon: BarChart3 },
-      { name: 'Audit', path: '/audit', icon: FileCheck2 },
+      { name: 'My Assets', path: '/assets', icon: Package },
+      { name: 'Resource Booking', path: '/booking', icon: Calendar },
+      { name: 'Booking History', path: '/booking-history', icon: History },
+      { name: 'Maintenance Requests', path: '/maintenance', icon: Wrench },
+      { name: 'My Requests', path: '/requests', icon: MessageSquare },
     ]
   },
   {
-    title: 'System',
+    title: 'Personal',
     items: [
       { name: 'Notifications', path: '/notifications', icon: Bell },
-      { name: 'Activity Logs', path: '/activity-logs', icon: Activity },
+      { name: 'Profile', path: '/profile', icon: User },
       { name: 'Settings', path: '/settings', icon: Settings },
     ]
   }
@@ -55,6 +46,11 @@ const navGroups = [
 
 export function Sidebar({ collapsed, setCollapsed }) {
   const location = useLocation();
+
+  const handleLogout = () => {
+    localStorage.clear();
+    window.location.href = '/login';
+  };
 
   return (
     <motion.aside
@@ -64,10 +60,10 @@ export function Sidebar({ collapsed, setCollapsed }) {
     >
       <div className="flex h-16 shrink-0 items-center justify-between px-4 border-b">
         <div className={cn("flex items-center gap-2", collapsed && "justify-center w-full")}>
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold">
-            A
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold shadow-md">
+            AF
           </div>
-          {!collapsed && <span className="font-semibold text-lg tracking-tight">AssetFlow</span>}
+          {!collapsed && <span className="font-semibold text-lg tracking-tight bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">AssetFlow</span>}
         </div>
       </div>
 
@@ -89,19 +85,19 @@ export function Sidebar({ collapsed, setCollapsed }) {
               )}
               <div className="space-y-1">
                 {group.items.map((item) => {
-                  const isActive = location.pathname.startsWith(item.path);
+                  const isActive = location.pathname === item.path;
                   return (
                     <NavLink
                       key={item.name}
                       to={item.path}
                       className={({ isActive }) => cn(
-                        "group flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground",
-                        isActive ? "bg-primary/10 text-primary" : "text-muted-foreground",
+                        "group flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 hover:bg-accent hover:text-accent-foreground relative",
+                        isActive ? "bg-primary/10 text-primary font-semibold" : "text-muted-foreground",
                         collapsed && "justify-center px-0 py-2.5"
                       )}
                       title={collapsed ? item.name : undefined}
                     >
-                      <item.icon className={cn("h-5 w-5 shrink-0", !collapsed && "mr-3")} />
+                      <item.icon className={cn("h-5 w-5 shrink-0 transition-transform group-hover:scale-105", !collapsed && "mr-3", isActive && "text-primary")} />
                       {!collapsed && <span>{item.name}</span>}
                       {isActive && !collapsed && (
                         <motion.div
@@ -116,6 +112,21 @@ export function Sidebar({ collapsed, setCollapsed }) {
             </div>
           ))}
         </div>
+      </div>
+
+      {/* Logout Section */}
+      <div className="p-3 border-t mt-auto">
+        <button
+          onClick={handleLogout}
+          className={cn(
+            "group flex w-full items-center rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 hover:bg-destructive/10 hover:text-destructive text-muted-foreground",
+            collapsed && "justify-center px-0 py-2.5"
+          )}
+          title={collapsed ? "Logout" : undefined}
+        >
+          <LogOut className={cn("h-5 w-5 shrink-0 transition-transform group-hover:scale-105", !collapsed && "mr-3")} />
+          {!collapsed && <span>Logout</span>}
+        </button>
       </div>
     </motion.aside>
   );
