@@ -67,3 +67,15 @@ export const sendPasswordResetEmail = async (email, resetToken) => {
   const html = `<p>You requested a password reset. Click <a href="${resetLink}">here</a> to reset your password.</p>`;
   return sendEmail(email, subject, html);
 };
+
+export const sendOtpEmail = async (email, name, otp) => {
+  const subject = 'AssetFlow - Password Reset OTP';
+  const html = `<p>Hi ${name},</p><p>Your password reset verification code is: <strong>${otp}</strong>.</p><p>This code expires in 10 minutes.</p>`;
+  return sendEmail(email, subject, html);
+};
+
+export const sendPasswordResetSuccessEmail = async (email, name) => {
+  const subject = 'AssetFlow - Password Reset Successful';
+  const html = `<p>Hi ${name},</p><p>Your password has been successfully updated. You can now log in with your new password.</p>`;
+  return sendEmail(email, subject, html);
+};

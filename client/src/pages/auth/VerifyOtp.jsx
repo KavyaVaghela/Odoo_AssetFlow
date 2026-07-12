@@ -1,20 +1,26 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { KeyRound, Mail, Loader2, ArrowLeft } from 'lucide-react';
+import { ShieldCheck, Loader2 } from 'lucide-react';
 import api from '../../services/api';
 
-export default function ForgotPassword() {
+export default function VerifyOtp() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const email = location.state?.email || '';
 
-  const [email, setEmail] = useState('');
+  const [otp, setOtp] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!email.trim()) {
-      setError('Please enter your email address');
+    if (!email) {
+      setError('Session context lost. Try again.');
+      return;
+    }
+    if (!otp.trim()) {
+      setError('Please input the verification code');
       return;
     }
 
@@ -22,12 +28,12 @@ export default function ForgotPassword() {
     setError('');
 
     try {
-      const res = await api.post('/api/admin/auth/forgot-password', { email });
+      const res = await api.post('/api/admin/auth/verify-otp', { email, otp });
       if (res.data.success) {
-        navigate('/verify-otp', { state: { email } });
+        navigate('/reset-password', { state: { email, otp } });
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to dispatch security code. Check email.');
+      setError(err.response?.data?.message || 'OTP verification failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -45,37 +51,27 @@ export default function ForgotPassword() {
       >
         <div className="bg-slate-900/60 backdrop-blur-xl border border-slate-800 rounded-3xl p-8 shadow-2xl relative">
           
-          {/* Header */}
           <div className="text-center space-y-2 mb-6">
-            <div className="flex justify-center mb-2">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-500/10 text-blue-500 shadow-md">
-                <KeyRound className="w-6 h-6" />
-              </div>
-            </div>
-            <h1 className="text-2xl font-extrabold tracking-tight">Forgot Password</h1>
+            <h1 className="text-2xl font-extrabold tracking-tight">Verify Security Code</h1>
             <p className="text-slate-400 text-xs">
-              Provide your account email and we'll dispatch a 6-digit verification code.
+              We sent a 6-digit numeric OTP verification code to <span className="text-blue-400 font-medium">{email}</span>
             </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label htmlFor="email" className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
-                Email Address
+              <label htmlFor="otp" className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                Verification Code (OTP)
               </label>
-              <div className="relative">
-                <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500">
-                  <Mail className="w-4 h-4" />
-                </span>
-                <input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="name@assetflow.com"
-                  className="w-full py-3 pl-10 pr-4 rounded-xl bg-slate-950 border border-slate-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 text-xs placeholder:text-slate-600 focus:outline-none transition-all duration-200"
-                />
-              </div>
+              <input
+                id="otp"
+                type="text"
+                maxLength={6}
+                value={otp}
+                onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
+                placeholder="000000"
+                className="w-full py-3 px-4 rounded-xl bg-slate-950 border border-slate-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 text-center tracking-[0.5rem] font-bold text-xl placeholder:text-slate-800 placeholder:tracking-normal focus:outline-none transition-all duration-200"
+              />
             </div>
 
             {error && (
@@ -96,24 +92,23 @@ export default function ForgotPassword() {
               {loading ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  Sending Code...
+                  Verifying...
                 </>
               ) : (
                 <>
-                  Send OTP
+                  <ShieldCheck className="w-5 h-5" />
+                  Verify Code
                 </>
               )}
             </button>
           </form>
 
-          {/* Footer Back */}
-          <div className="flex justify-center mt-6">
-            <button
+          <div className="text-center mt-6">
+            <button 
               onClick={() => navigate('/login')}
-              className="text-xs text-slate-500 hover:text-slate-300 font-semibold flex items-center gap-1.5 cursor-pointer transition-colors"
+              className="text-slate-400 hover:text-slate-300 text-xs font-semibold transition-colors cursor-pointer"
             >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              Back to Sign In
+              Back to Login
             </button>
           </div>
 
