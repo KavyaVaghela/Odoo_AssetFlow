@@ -1,59 +1,37 @@
-const express = require('express');
-const cors = require('cors');
-const morgan = require('morgan');
-const adminRoutes = require('./routes/admin');
-const authRoutes = require('./routes/auth');
-const hodRoutes = require('./routes/hod');
-const requestLogger = require('./middleware/requestLogger');
-const errorHandler = require('./middleware/errorHandler');
+import express from 'express';
+import cors from 'cors';
+import dotenv from 'dotenv';
+import { errorMiddleware } from './middlewares/errorMiddleware.js';
+
+// Import Routes
+import adminRoutes from './routes/adminRoutes.js';
+
+dotenv.config();
 
 const app = express();
 
-// ==========================================
-// Middleware Configurations
-// ==========================================
-
-// Enable Cross-Origin Resource Sharing
+// Middleware
 app.use(cors());
-
-// HTTP request logger (console output for development)
-app.use(morgan('dev'));
-
-// Parse incoming JSON payloads
 app.use(express.json());
-
-// Parse URL-encoded payloads
 app.use(express.urlencoded({ extended: true }));
 
-// Custom DB request auditor (logs successful POST, PUT, DELETE write operations)
-app.use(requestLogger);
+// Serve uploaded files statically
+app.use('/uploads', express.static('uploads'));
 
-// ==========================================
-// Base API Routing
-// ==========================================
-
-app.use('/api/admin/auth', authRoutes);
+// Routes
 app.use('/api/admin', adminRoutes);
-app.use('/api/hod', hodRoutes);
 
-// Root test endpoint
-app.get('/', (req, res) => {
-  res.json({
-    success: true,
-    message: 'Welcome to AssetFlow Admin Module REST API Server.'
-  });
+// Health Check
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok', message: 'AssetFlow API is running' });
 });
 
-// Capture undefined routes (404)
+// 404 Route NotFound
 app.use((req, res, next) => {
-  const error = new Error(`Not Found - Path ${req.originalUrl} does not exist`);
-  error.statusCode = 404;
-  next(error);
+  res.status(404).json({ success: false, message: 'API Route Not Found' });
 });
 
-// ==========================================
-// Global Error Handler Mount
-// ==========================================
-app.use(errorHandler);
+// Global Error Handler
+app.use(errorMiddleware);
 
-module.exports = app;
+export default app;
