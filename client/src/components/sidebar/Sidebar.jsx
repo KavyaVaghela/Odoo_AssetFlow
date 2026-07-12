@@ -54,19 +54,24 @@ const sidebarItems = [
   CheckSquare,
   RefreshCw,
   FileBarChart,
-  Grid
+  Grid,
+  Shield,
+  QrCode
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-const navGroups = [
+// Static template structure for all sidebar menu divisions
+const navGroupsTemplate = [
   {
     title: 'Overview',
+    roles: ['Employee', 'Asset Manager', 'Department Head', 'Admin'],
     items: [
       { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard }
     ]
   },
   {
     title: 'Employee Portal',
+    roles: ['Employee', 'Asset Manager', 'Department Head', 'Admin'],
     items: [
       { name: 'My Assets', path: '/assets', icon: Package },
       { name: 'Resource Booking', path: '/booking', icon: Calendar },
@@ -77,7 +82,21 @@ const navGroups = [
     ]
   },
   {
+    title: 'Asset Manager',
+    roles: ['Asset Manager', 'Admin'],
+    items: [
+      { name: 'Asset Inventory', path: '/assets/inventory', icon: Package },
+      { name: 'Allocate Assets', path: '/assets/allocation', icon: CheckSquare },
+      { name: 'Transfers', path: '/assets/transfer', icon: RefreshCw },
+      { name: 'Returns', path: '/assets/returns', icon: History },
+      { name: 'QR Management', path: '/qr', icon: QrCode },
+      { name: 'Reports', path: '/reports', icon: FileBarChart },
+      { name: 'Audit', path: '/audit', icon: Wrench },
+    ]
+  },
+  {
     title: 'Department Head',
+    roles: ['Department Head', 'Admin'],
     items: [
       { name: 'Dept Dashboard', path: '/department/dashboard', icon: Grid },
       { name: 'Dept Employees', path: '/department/employees', icon: Users },
@@ -90,7 +109,18 @@ const navGroups = [
     ]
   },
   {
+    title: 'Admin Control',
+    roles: ['Admin'],
+    items: [
+      { name: 'Employees', path: '/admin/employees', icon: Users },
+      { name: 'Departments', path: '/admin/departments', icon: Grid },
+      { name: 'Roles', path: '/admin/roles', icon: Shield },
+      { name: 'Categories', path: '/admin/categories', icon: Package }
+    ]
+  },
+  {
     title: 'Personal',
+    roles: ['Employee', 'Asset Manager', 'Department Head', 'Admin'],
     items: [
       { name: 'Profile', path: '/profile', icon: User },
       { name: 'Settings', path: '/settings', icon: Settings },
@@ -102,6 +132,10 @@ const navGroups = [
 export function Sidebar({ collapsed, setCollapsed }) {
   const location = useLocation();
 
+  // Extract user details to check roles
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const userRoles = user.roles || ['Employee'];
+
   const handleLogout = () => {
 <<<<<<< HEAD
     alert("Signing out of AssetFlow. (Mock Action)");
@@ -110,6 +144,11 @@ export function Sidebar({ collapsed, setCollapsed }) {
     window.location.href = '/login';
 >>>>>>> eba111a9b436d9a31cb253baeb1bb36a0ab1af72
   };
+
+  // Filter navigation groups based on user roles
+  const filteredGroups = navGroupsTemplate.filter(group => 
+    group.roles.some(role => userRoles.includes(role))
+  );
 
   return (
     <motion.aside
@@ -140,7 +179,7 @@ export function Sidebar({ collapsed, setCollapsed }) {
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold shadow-md">
             AF
           </div>
-          {!collapsed && <span className="font-semibold text-lg tracking-tight bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">AssetFlow HOD</span>}
+          {!collapsed && <span className="font-semibold text-lg tracking-tight bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">AssetFlow</span>}
         </div>
       </div>
 
@@ -198,10 +237,10 @@ export function Sidebar({ collapsed, setCollapsed }) {
 =======
       <div className="flex-1 overflow-y-auto py-4 scrollbar-hide">
         <div className="px-3 space-y-6">
-          {navGroups.map((group, i) => (
+          {filteredGroups.map((group, i) => (
             <div key={i}>
               {!collapsed && (
-                <h4 className="mb-2 px-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/80">
+                <h4 className="mb-2 px-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/80 animate-fade-in">
                   {group.title}
                 </h4>
               )}
@@ -241,7 +280,7 @@ export function Sidebar({ collapsed, setCollapsed }) {
         <button
           onClick={handleLogout}
           className={cn(
-            "group flex w-full items-center rounded-lg px-3 py-2 text-xs font-medium transition-all duration-200 hover:bg-destructive/10 hover:text-destructive text-muted-foreground",
+            "group flex w-full items-center rounded-lg px-3 py-2 text-xs font-medium transition-all duration-200 hover:bg-destructive/10 hover:text-destructive text-muted-foreground cursor-pointer",
             collapsed && "justify-center px-0 py-2.5"
           )}
           title={collapsed ? "Logout" : undefined}

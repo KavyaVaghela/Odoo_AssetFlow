@@ -55,7 +55,11 @@ CREATE TABLE `users` (
   `department_id` INT NULL, -- FK added via ALTER TABLE
   `designation_id` INT NULL, -- FK added via ALTER TABLE (normalization of designation)
   `joining_date` DATE NOT NULL,
-  `status` ENUM('Active', 'Inactive') NOT NULL DEFAULT 'Active',
+  `status` ENUM('Active', 'Inactive', 'Pending') NOT NULL DEFAULT 'Pending',
+  `approval_status` ENUM('Pending', 'Approved', 'Rejected') NOT NULL DEFAULT 'Pending',
+  `otp_code` VARCHAR(10) NULL,
+  `otp_expires_at` DATETIME NULL,
+  `refresh_token` VARCHAR(500) NULL,
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   CONSTRAINT `pk_users` PRIMARY KEY (`id`),
