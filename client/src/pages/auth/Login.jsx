@@ -146,7 +146,13 @@ export default function Login() {
       });
       
       setTimeout(() => {
-        if (typeof navigate === 'function') navigate('/dashboard');
+        if (typeof navigate === 'function') {
+          if (role === 'Department Head') {
+            navigate('/department/dashboard');
+          } else {
+            navigate('/dashboard');
+          }
+        }
       }, 1000);
     }
   };
