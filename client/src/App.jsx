@@ -8,6 +8,8 @@ import Departments from './pages/organization/Departments';
 import Employees from './pages/organization/Employees';
 import Roles from './pages/organization/Roles';
 import Categories from './pages/organization/Categories';
+import Login from './pages/auth/Login';
+import Signup from './pages/auth/Signup';
 
 // Placeholders for remaining pages to allow routing
 const Placeholder = ({ title }) => (
@@ -22,7 +24,9 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
         
         <Route element={<DashboardLayout />}>
           <Route path="/dashboard" element={<Dashboard />} />
