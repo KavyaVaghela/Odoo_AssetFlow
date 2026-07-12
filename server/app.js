@@ -3,6 +3,7 @@ const cors = require('cors');
 const morgan = require('morgan');
 const adminRoutes = require('./routes/admin');
 const authRoutes = require('./routes/auth');
+const hodRoutes = require('./routes/hod');
 const requestLogger = require('./middleware/requestLogger');
 const errorHandler = require('./middleware/errorHandler');
 
@@ -33,6 +34,7 @@ app.use(requestLogger);
 
 app.use('/api/admin/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/hod', hodRoutes);
 
 // Root test endpoint
 app.get('/', (req, res) => {
