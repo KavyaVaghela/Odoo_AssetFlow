@@ -1,4 +1,78 @@
 import React, { useState, useEffect } from 'react';
+<<<<<<< HEAD
+import { motion } from 'framer-motion';
+import { 
+  PackageSearch, PlusCircle, ArrowRightLeft, QrCode, ShieldCheck, 
+  BarChart3, CheckCircle, Clock, Package, Briefcase, Undo2, Wrench, LayoutDashboard, UserPlus
+} from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { useStore } from '@/store/useStore';
+import { useNavigate } from 'react-router-dom';
+import { 
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  BarChart, Bar, Cell
+} from 'recharts';
+
+export default function AssetDashboard() {
+  const navigate = useNavigate();
+  const { profile } = useStore();
+  const [time, setTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const formattedDate = time.toLocaleDateString('en-US', { 
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+  });
+  const formattedTime = time.toLocaleTimeString('en-US', { 
+    hour: '2-digit', minute: '2-digit', second: '2-digit' 
+  });
+
+  // Mock Data for KPI
+  const kpi = {
+    totalAssets: 1245,
+    allocatedAssets: 856,
+    availableAssets: 214,
+    underMaintenance: 42,
+    returnedAssets: 15,
+    disposedAssets: 118,
+    totalResources: 34
+  };
+
+  const cardsData = [
+    { title: "Total Assets", value: kpi.totalAssets, icon: Package, color: "text-blue-500", bg: "bg-blue-500/10", border: "border-l-blue-500", route: "/inventory" },
+    { title: "Allocated", value: kpi.allocatedAssets, icon: UserPlus, color: "text-emerald-500", bg: "bg-emerald-500/10", border: "border-l-emerald-500", route: "/inventory" },
+    { title: "Available", value: kpi.availableAssets, icon: CheckCircle, color: "text-indigo-500", bg: "bg-indigo-500/10", border: "border-l-indigo-500", route: "/inventory" },
+    { title: "Maintenance", value: kpi.underMaintenance, icon: Wrench, color: "text-amber-500", bg: "bg-amber-500/10", border: "border-l-amber-500", route: "/maintenance" },
+    { title: "Returned", value: kpi.returnedAssets, icon: Undo2, color: "text-cyan-500", bg: "bg-cyan-500/10", border: "border-l-cyan-500", route: "/return" },
+    { title: "Total Resources", value: kpi.totalResources, icon: Briefcase, color: "text-purple-500", bg: "bg-purple-500/10", border: "border-l-purple-500", route: "/resources" },
+  ];
+
+  const quickActions = [
+    { title: "Register Asset", icon: PlusCircle, route: "/register", color: "hover:bg-blue-500/10 hover:text-blue-600" },
+    { title: "Allocate Asset", icon: UserPlus, route: "/allocate", color: "hover:bg-emerald-500/10 hover:text-emerald-600" },
+    { title: "Transfer Asset", icon: ArrowRightLeft, route: "/transfer", color: "hover:bg-amber-500/10 hover:text-amber-600" },
+    { title: "Generate QR", icon: QrCode, route: "/qr", color: "hover:bg-purple-500/10 hover:text-purple-600" },
+    { title: "Schedule Audit", icon: ShieldCheck, route: "/audit", color: "hover:bg-rose-500/10 hover:text-rose-600" },
+    { title: "Generate Report", icon: BarChart3, route: "/reports", color: "hover:bg-cyan-500/10 hover:text-cyan-600" },
+  ];
+
+  const allocationChartData = [
+    { name: 'Jan', allocations: 40 },
+    { name: 'Feb', allocations: 30 },
+    { name: 'Mar', allocations: 60 },
+    { name: 'Apr', allocations: 45 },
+    { name: 'May', allocations: 80 },
+    { name: 'Jun', allocations: 110 },
+  ];
+
+  return (
+    <div className="space-y-8 animate-in fade-in duration-300">
+=======
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useStore } from '@/store/useStore';
@@ -94,11 +168,108 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6 pb-12 relative">
+>>>>>>> eba111a9b436d9a31cb253baeb1bb36a0ab1af72
       
       {/* Welcome Banner */}
       <motion.div 
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
+<<<<<<< HEAD
+        className="p-6 md:p-8 rounded-2xl bg-gradient-to-r from-blue-700 via-indigo-700 to-violet-800 text-white shadow-xl relative overflow-hidden"
+      >
+        <div className="absolute right-0 top-0 w-96 h-96 bg-white/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative z-10">
+          <div>
+            <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">Asset Manager Dashboard</h1>
+            <p className="text-blue-100 mt-2 text-sm md:text-base max-w-xl">
+              Oversee the entire lifecycle of enterprise assets and resources across the organization.
+            </p>
+          </div>
+          <div className="flex flex-col items-end bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/10 min-w-[200px]">
+            <div className="flex items-center gap-2 text-xs text-blue-200 font-semibold mb-1 uppercase tracking-wider">
+              <Clock size={12} />
+              {formattedDate}
+            </div>
+            <div className="text-xl font-bold tracking-tight text-white">{formattedTime}</div>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* KPI Cards Grid */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+        {cardsData.map((card, index) => (
+          <motion.div
+            key={card.title}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.05 }}
+          >
+            <Card 
+              onClick={() => navigate(card.route)}
+              className={`glass hover:shadow-lg transition-all duration-300 border-l-4 ${card.border} cursor-pointer group hover:-translate-y-1`}
+            >
+              <CardContent className="p-4 flex flex-col justify-between h-28">
+                <div className="flex justify-between items-start">
+                  <span className="text-xs font-bold text-muted-foreground uppercase tracking-wide truncate pr-2">{card.title}</span>
+                  <div className={`p-2 rounded-lg ${card.bg} ${card.color} group-hover:scale-110 transition-transform duration-200`}>
+                    <card.icon size={16} />
+                  </div>
+                </div>
+                <div>
+                  <div className="text-2xl font-black tracking-tight">{card.value}</div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        ))}
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-12">
+        {/* Quick Actions */}
+        <Card className="lg:col-span-4 glass">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg font-bold">Quick Actions</CardTitle>
+            <CardDescription>Rapidly execute asset management tasks.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-3">
+              {quickActions.map((action, i) => (
+                <motion.div key={action.title} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.1 }}>
+                  <Button 
+                    variant="outline" 
+                    className={`w-full h-20 flex flex-col items-center justify-center gap-2 border-dashed ${action.color} transition-all`}
+                    onClick={() => navigate(action.route)}
+                  >
+                    <action.icon size={20} />
+                    <span className="text-xs font-semibold">{action.title}</span>
+                  </Button>
+                </motion.div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Allocations Chart */}
+        <Card className="lg:col-span-8 glass">
+          <CardHeader>
+            <CardTitle className="text-lg font-bold">Asset Allocations Over Time</CardTitle>
+            <CardDescription>Monthly trend of assets assigned to employees.</CardDescription>
+          </CardHeader>
+          <CardContent className="h-[260px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={allocationChartData}>
+                <defs>
+                  <linearGradient id="colorAllocations" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.4}/>
+                    <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+                <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} />
+                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} />
+                <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '12px', fontSize: '12px' }} />
+                <Area type="monotone" dataKey="allocations" stroke="hsl(var(--primary))" strokeWidth={3} fillOpacity={1} fill="url(#colorAllocations)" dot={{ r: 4 }} activeDot={{ r: 6 }} />
+=======
         transition={{ duration: 0.5 }}
         className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-blue-700 via-indigo-700 to-indigo-800 p-6 md:p-8 text-white shadow-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-6"
       >
@@ -331,10 +502,13 @@ export default function Dashboard() {
                 <YAxis fontSize={11} stroke="hsl(var(--muted-foreground))" tickLine={false} axisLine={false} />
                 <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--background))', borderColor: 'hsl(var(--border))', borderRadius: '12px' }} />
                 <Area type="monotone" dataKey="rate" stroke="#2563EB" strokeWidth={2.5} fillOpacity={1} fill="url(#colorRate)" name="Utilization Rate (%)" />
+>>>>>>> eba111a9b436d9a31cb253baeb1bb36a0ab1af72
               </AreaChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
+<<<<<<< HEAD
+=======
 
         {/* State Categories Distribution Pie Chart */}
         <Card className="md:col-span-3 rounded-2xl border-border/50 glass">
@@ -571,13 +745,17 @@ export default function Dashboard() {
         >
           <Sparkles className="h-6 w-6 animate-pulse" />
         </motion.button>
+>>>>>>> eba111a9b436d9a31cb253baeb1bb36a0ab1af72
       </div>
 
     </div>
   );
 }
+<<<<<<< HEAD
+=======
 
 const kpiData = {
   maintenanceAssets: 4,
   availableAssets: 41,
 };
+>>>>>>> eba111a9b436d9a31cb253baeb1bb36a0ab1af72

@@ -1,0 +1,69 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Asset {
+  id           Int           @id @default(autoincrement())
+  name         String
+  code         String        @unique
+  category     String
+  department   String?
+  holder       String?
+  status       String        @default("Available") // Available, Allocated, Maintenance, Disposed
+  condition    String        @default("Good") // Good, Fair, Poor, Damaged
+  location     String?
+  purchaseDate DateTime?
+  cost         Float?
+  vendor       String?
+  warranty     DateTime?
+  qrCode       String?       @unique
+  description  String?       @db.Text
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  
+  transactions Transaction[]
+  maintenance  Maintenance[]
+}
+
+model Resource {
+  id           Int      @id @default(autoincrement())
+  name         String
+  type         String   // Meeting Room, Vehicle, Projector, etc.
+  capacity     Int?
+  department   String?
+  status       String   @default("Available") // Available, Booked, Maintenance
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Transaction {
+  id         Int      @id @default(autoincrement())
+  assetId    Int
+  type       String   // Allocation, Transfer, Return
+  fromHolder String?
+  toHolder   String?
+  date       DateTime @default(now())
+  remarks    String?  @db.Text
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  asset      Asset    @relation(fields: [assetId], references: [id])
+}
+
+model Maintenance {
+  id         Int      @id @default(autoincrement())
+  assetId    Int
+  status     String   @default("Pending") // Pending, Approved, Assigned, Completed, Rejected
+  assignedTo String?
+  issue      String   @db.Text
+  notes      String?  @db.Text
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  asset      Asset    @relation(fields: [assetId], references: [id])
+}
