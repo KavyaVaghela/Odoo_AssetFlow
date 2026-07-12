@@ -1,5 +1,5 @@
-const { body, param, validationResult } = require('express-validator');
-const response = require('../utils/response');
+import { body, param, validationResult } from 'express-validator';
+import { errorResponse } from '../utils/response.js';
 
 /**
  * Runner middleware to validate checks and return standardized JSON payload errors
@@ -15,12 +15,12 @@ const validate = (validations) => {
       return next();
     }
 
-    return response.error(res, 'Validation failed.', 400, errors.array());
+    return errorResponse(res, 'Validation failed.', errors.array(), 400);
   };
 };
 
 // 1. Profile update validation
-const updateProfile = validate([
+export const updateProfile = validate([
   body('phone')
     .optional()
     .isString()
@@ -34,7 +34,7 @@ const updateProfile = validate([
 ]);
 
 // 2. Resource Booking / Calendar slot reservation
-const bookingSlot = validate([
+export const bookingSlot = validate([
   body('resource_id')
     .isInt()
     .withMessage('Resource ID must be a valid integer'),
@@ -55,14 +55,8 @@ const bookingSlot = validate([
 ]);
 
 // 3. Technician assignment schema
-const assignTechnician = validate([
+export const assignTechnician = validate([
   body('assigned_to')
     .isInt()
     .withMessage('Assigned technician user ID must be a valid integer')
 ]);
-
-module.exports = {
-  updateProfile,
-  bookingSlot,
-  assignTechnician
-};

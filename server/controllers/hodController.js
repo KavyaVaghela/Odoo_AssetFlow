@@ -1,7 +1,7 @@
-const db = require('../config/db');
-const response = require('../utils/response');
-const { sendMail } = require('../utils/mailer');
-const bcrypt = require('bcryptjs');
+import pool from '../config/database.js';
+import { successResponse, errorResponse } from '../utils/response.js';
+import { sendMail } from '../utils/mailer.js';
+import bcrypt from 'bcrypt';
 
 class HODController {
   // ==========================================================================
@@ -13,38 +13,38 @@ class HODController {
       const hodId = req.user.id;
 
       // 1. Department Info
-      const [deptRows] = await db.query(
+      const [deptRows] = await pool.query(
         'SELECT * FROM departments WHERE id = ?',
         [deptId]
       );
       const departmentInfo = deptRows[0];
 
       // 2. Department Employees Count
-      const [empCountRows] = await db.query(
+      const [empCountRows] = await pool.query(
         "SELECT COUNT(*) AS count FROM users WHERE department_id = ? AND status = 'Active'",
         [deptId]
       );
 
       // 3. Department Assets Count
-      const [assetCountRows] = await db.query(
+      const [assetCountRows] = await pool.query(
         'SELECT COUNT(*) AS count FROM assets WHERE department_id = ?',
         [deptId]
       );
 
       // 4. Booking Requests Pending Count
-      const [pendingBookingsRows] = await db.query(
+      const [pendingBookingsRows] = await pool.query(
         "SELECT COUNT(*) AS count FROM resource_bookings rb JOIN assets a ON rb.resource_id = a.id WHERE a.department_id = ? AND rb.status = 'Pending'",
         [deptId]
       );
 
       // 5. Service Requests Pending Count
-      const [pendingReqRows] = await db.query(
+      const [pendingReqRows] = await pool.query(
         "SELECT COUNT(*) AS count FROM employee_requests er JOIN users u ON er.employee_id = u.id WHERE u.department_id = ? AND er.status = 'Pending'",
         [deptId]
       );
 
       // 6. Maintenance Requests Pending Count
-      const [pendingMaintRows] = await db.query(
+      const [pendingMaintRows] = await pool.query(
         "SELECT COUNT(*) AS count FROM maintenance_requests mr JOIN assets a ON mr.asset_id = a.id WHERE a.department_id = ? AND mr.status = 'Pending'",
         [deptId]
       );
@@ -55,7 +55,7 @@ class HODController {
         pendingMaintRows[0].count;
 
       // 7. Today's Bookings
-      const [todayBookings] = await db.query(
+      const [todayBookings] = await pool.query(
         `SELECT rb.*, u.first_name, u.last_name, a.asset_name 
          FROM resource_bookings rb 
          JOIN users u ON rb.employee_id = u.id 
@@ -65,7 +65,7 @@ class HODController {
       );
 
       // 8. Department Statistics (Asset counts grouped by status)
-      const [stats] = await db.query(
+      const [stats] = await pool.query(
         `SELECT current_status, COUNT(*) as count 
          FROM assets 
          WHERE department_id = ? 
@@ -74,7 +74,7 @@ class HODController {
       );
 
       // 9. Recent Activities (from HOD department's activity logs)
-      const [recentActivities] = await db.query(
+      const [recentActivities] = await pool.query(
         `SELECT al.*, u.first_name, u.last_name 
          FROM activity_logs al 
          JOIN users u ON al.user_id = u.id 
@@ -99,7 +99,7 @@ class HODController {
         recentActivities
       };
 
-      return response.success(res, 'Dashboard metrics fetched successfully', dashboardData);
+      return successResponse(res, 'Dashboard metrics fetched successfully', dashboardData);
     } catch (err) {
       next(err);
     }
@@ -121,9 +121,9 @@ class HODController {
         WHERE u.department_id = ?
         ORDER BY u.first_name ASC
       `;
-      const [employees] = await db.query(sql, [deptId]);
+      const [employees] = await pool.query(sql, [deptId]);
 
-      return response.success(res, 'Department employees fetched successfully', employees);
+      return successResponse(res, 'Department employees fetched successfully', employees);
     } catch (err) {
       next(err);
     }
@@ -141,13 +141,13 @@ class HODController {
         LEFT JOIN designations ds ON u.designation_id = ds.id
         WHERE u.id = ? AND u.department_id = ?
       `;
-      const [rows] = await db.query(sql, [id, deptId]);
+      const [rows] = await pool.query(sql, [id, deptId]);
 
       if (rows.length === 0) {
-        return response.error(res, 'Employee not found in your department', 404);
+        return errorResponse(res, 'Employee not found in your department', [], 404);
       }
 
-      return response.success(res, 'Employee details fetched successfully', rows[0]);
+      return successResponse(res, 'Employee details fetched successfully', rows[0]);
     } catch (err) {
       next(err);
     }
@@ -170,9 +170,9 @@ class HODController {
         WHERE a.department_id = ?
         ORDER BY a.asset_code ASC
       `;
-      const [assets] = await db.query(sql, [deptId]);
+      const [assets] = await pool.query(sql, [deptId]);
 
-      return response.success(res, 'Department assets inventory fetched successfully', assets);
+      return successResponse(res, 'Department assets inventory fetched successfully', assets);
     } catch (err) {
       next(err);
     }
@@ -194,9 +194,9 @@ class HODController {
         WHERE a.department_id = ?
         ORDER BY rb.created_at DESC
       `;
-      const [bookings] = await db.query(sql, [deptId]);
+      const [bookings] = await pool.query(sql, [deptId]);
 
-      return response.success(res, 'Booking requests fetched successfully', bookings);
+      return successResponse(res, 'Booking requests fetched successfully', bookings);
     } catch (err) {
       next(err);
     }
@@ -210,30 +210,30 @@ class HODController {
       const { remarks } = req.body;
 
       // Find booking & assert HOD authority
-      const [bookings] = await db.query(
+      const [bookings] = await pool.query(
         'SELECT rb.*, u.email, u.first_name, a.asset_name FROM resource_bookings rb JOIN users u ON rb.employee_id = u.id JOIN assets a ON rb.resource_id = a.id WHERE rb.id = ? AND a.department_id = ?',
         [id, deptId]
       );
       if (bookings.length === 0) {
-        return response.error(res, 'Booking request not found or unauthorized', 404);
+        return errorResponse(res, 'Booking request not found or unauthorized', [], 404);
       }
 
       const booking = bookings[0];
 
       // Update booking status
-      await db.query(
+      await pool.query(
         "UPDATE resource_bookings SET status = 'Approved', approved_by = ?, remarks = ? WHERE id = ?",
         [hodId, remarks || null, id]
       );
 
       // Create notification
-      await db.query(
+      await pool.query(
         "INSERT INTO notifications (user_id, title, message, type) VALUES (?, ?, ?, 'Booking')",
         [booking.employee_id, 'Booking Approved', `Your booking slot for "${booking.asset_name}" has been approved by your HOD.`]
       );
 
       // Log activity
-      await db.query(
+      await pool.query(
         "INSERT INTO activity_logs (user_id, module, action, description) VALUES (?, 'Booking', 'Booking Approval', ?)",
         [hodId, `Approved booking ID ${id} for "${booking.asset_name}" requested by ${booking.first_name}`]
       );
@@ -248,7 +248,7 @@ class HODController {
                <p>Sincerely,<br/>AssetFlow Team</p>`
       });
 
-      return response.success(res, 'Booking approved successfully');
+      return successResponse(res, 'Booking approved successfully');
     } catch (err) {
       next(err);
     }
@@ -262,30 +262,30 @@ class HODController {
       const { remarks } = req.body;
 
       // Find booking
-      const [bookings] = await db.query(
+      const [bookings] = await pool.query(
         'SELECT rb.*, u.email, u.first_name, a.asset_name FROM resource_bookings rb JOIN users u ON rb.employee_id = u.id JOIN assets a ON rb.resource_id = a.id WHERE rb.id = ? AND a.department_id = ?',
         [id, deptId]
       );
       if (bookings.length === 0) {
-        return response.error(res, 'Booking request not found or unauthorized', 404);
+        return errorResponse(res, 'Booking request not found or unauthorized', [], 404);
       }
 
       const booking = bookings[0];
 
       // Update status
-      await db.query(
+      await pool.query(
         "UPDATE resource_bookings SET status = 'Rejected', approved_by = ?, remarks = ? WHERE id = ?",
         [hodId, remarks || null, id]
       );
 
       // Create notification
-      await db.query(
+      await pool.query(
         "INSERT INTO notifications (user_id, title, message, type) VALUES (?, ?, ?, 'Booking')",
         [booking.employee_id, 'Booking Rejected', `Your booking slot for "${booking.asset_name}" has been rejected by HOD.`]
       );
 
       // Log activity
-      await db.query(
+      await pool.query(
         "INSERT INTO activity_logs (user_id, module, action, description) VALUES (?, 'Booking', 'Booking Rejection', ?)",
         [hodId, `Rejected booking ID ${id} for "${booking.asset_name}" requested by ${booking.first_name}`]
       );
@@ -300,7 +300,7 @@ class HODController {
                <p>Sincerely,<br/>AssetFlow Team</p>`
       });
 
-      return response.success(res, 'Booking rejected successfully');
+      return successResponse(res, 'Booking rejected successfully');
     } catch (err) {
       next(err);
     }
@@ -323,9 +323,9 @@ class HODController {
         WHERE a.department_id = ?
         ORDER BY mr.created_at DESC
       `;
-      const [maintenance] = await db.query(sql, [deptId]);
+      const [maintenance] = await pool.query(sql, [deptId]);
 
-      return response.success(res, 'Maintenance requests fetched successfully', maintenance);
+      return successResponse(res, 'Maintenance requests fetched successfully', maintenance);
     } catch (err) {
       next(err);
     }
@@ -338,34 +338,34 @@ class HODController {
       const { id } = req.params;
       const { remarks } = req.body;
 
-      const [requests] = await db.query(
+      const [requests] = await pool.query(
         'SELECT mr.*, u.email, u.first_name, a.asset_name FROM maintenance_requests mr JOIN users u ON mr.employee_id = u.id JOIN assets a ON mr.asset_id = a.id WHERE mr.id = ? AND a.department_id = ?',
         [id, deptId]
       );
       if (requests.length === 0) {
-        return response.error(res, 'Maintenance request not found or unauthorized', 404);
+        return errorResponse(res, 'Maintenance request not found or unauthorized', [], 404);
       }
 
       const request = requests[0];
 
       // Update maintenance status and asset status
-      await db.query(
+      await pool.query(
         "UPDATE maintenance_requests SET status = 'Approved', remarks = ? WHERE id = ?",
         [remarks || null, id]
       );
-      await db.query(
+      await pool.query(
         "UPDATE assets SET current_status = 'Under Maintenance' WHERE id = ?",
         [request.asset_id]
       );
 
       // Create notification
-      await db.query(
+      await pool.query(
         "INSERT INTO notifications (user_id, title, message, type) VALUES (?, ?, ?, 'Maintenance')",
         [request.employee_id, 'Maintenance Approved', `Your maintenance ticket for "${request.asset_name}" was approved.`]
       );
 
       // Log activity
-      await db.query(
+      await pool.query(
         "INSERT INTO activity_logs (user_id, module, action, description) VALUES (?, 'Maintenance', 'Maintenance Approval', ?)",
         [hodId, `Approved maintenance request ID ${id} for "${request.asset_name}"`]
       );
@@ -379,7 +379,7 @@ class HODController {
                <p>Sincerely,<br/>AssetFlow Team</p>`
       });
 
-      return response.success(res, 'Maintenance request approved');
+      return successResponse(res, 'Maintenance request approved');
     } catch (err) {
       next(err);
     }
@@ -392,23 +392,23 @@ class HODController {
       const { id } = req.params;
       const { remarks } = req.body;
 
-      const [requests] = await db.query(
+      const [requests] = await pool.query(
         'SELECT mr.*, u.email, u.first_name, a.asset_name FROM maintenance_requests mr JOIN users u ON mr.employee_id = u.id JOIN assets a ON mr.asset_id = a.id WHERE mr.id = ? AND a.department_id = ?',
         [id, deptId]
       );
       if (requests.length === 0) {
-        return response.error(res, 'Maintenance request not found or unauthorized', 404);
+        return errorResponse(res, 'Maintenance request not found or unauthorized', [], 404);
       }
 
       const request = requests[0];
 
-      await db.query(
+      await pool.query(
         "UPDATE maintenance_requests SET status = 'Rejected', remarks = ? WHERE id = ?",
         [remarks || null, id]
       );
 
       // Notification
-      await db.query(
+      await pool.query(
         "INSERT INTO notifications (user_id, title, message, type) VALUES (?, ?, ?, 'Maintenance')",
         [request.employee_id, 'Maintenance Rejected', `Your maintenance request for "${request.asset_name}" was rejected by HOD.`]
       );
@@ -423,7 +423,7 @@ class HODController {
                <p>Sincerely,<br/>AssetFlow Team</p>`
       });
 
-      return response.success(res, 'Maintenance request rejected');
+      return successResponse(res, 'Maintenance request rejected');
     } catch (err) {
       next(err);
     }
@@ -437,43 +437,43 @@ class HODController {
       const { assigned_to, remarks } = req.body; // Technician user ID
 
       // Assert HOD authority
-      const [requests] = await db.query(
+      const [requests] = await pool.query(
         'SELECT mr.*, a.asset_name FROM maintenance_requests mr JOIN assets a ON mr.asset_id = a.id WHERE mr.id = ? AND a.department_id = ?',
         [id, deptId]
       );
       if (requests.length === 0) {
-        return response.error(res, 'Maintenance request not found or unauthorized', 404);
+        return errorResponse(res, 'Maintenance request not found or unauthorized', [], 404);
       }
       const request = requests[0];
 
       // Assert technician validity
-      const [techs] = await db.query(
+      const [techs] = await pool.query(
         'SELECT id, email, first_name FROM users WHERE id = ?',
         [assigned_to]
       );
       if (techs.length === 0) {
-        return response.error(res, 'Selected technician user not found', 400);
+        return errorResponse(res, 'Selected technician user not found', [], 400);
       }
       const technician = techs[0];
 
       // Update maintenance
-      await db.query(
+      await pool.query(
         "UPDATE maintenance_requests SET status = 'Assigned', assigned_to = ?, remarks = ? WHERE id = ?",
         [assigned_to, remarks || null, id]
       );
 
       // Notifications
-      await db.query(
+      await pool.query(
         "INSERT INTO notifications (user_id, title, message, type) VALUES (?, ?, ?, 'Maintenance')",
         [request.employee_id, 'Technician Assigned', `Technician ${technician.first_name} was assigned to fix your "${request.asset_name}".`]
       );
-      await db.query(
+      await pool.query(
         "INSERT INTO notifications (user_id, title, message, type) VALUES (?, ?, ?, 'Maintenance')",
         [assigned_to, 'New Task Assigned', `You were assigned to maintenance ticket ID ${id} for "${request.asset_name}".`]
       );
 
       // Audit logs
-      await db.query(
+      await pool.query(
         "INSERT INTO activity_logs (user_id, module, action, description) VALUES (?, 'Maintenance', 'Maintenance Assignment', ?)",
         [hodId, `Assigned technician ${technician.first_name} to maintenance task ID ${id}`]
       );
@@ -489,7 +489,7 @@ class HODController {
                <p>Sincerely,<br/>AssetFlow Team</p>`
       });
 
-      return response.success(res, 'Maintenance technician assigned successfully');
+      return successResponse(res, 'Maintenance technician assigned successfully');
     } catch (err) {
       next(err);
     }
@@ -509,9 +509,9 @@ class HODController {
         WHERE u.department_id = ?
         ORDER BY er.created_at DESC
       `;
-      const [requests] = await db.query(sql, [deptId]);
+      const [requests] = await pool.query(sql, [deptId]);
 
-      return response.success(res, 'Employee requests fetched successfully', requests);
+      return successResponse(res, 'Employee requests fetched successfully', requests);
     } catch (err) {
       next(err);
     }
@@ -524,29 +524,29 @@ class HODController {
       const { id } = req.params;
       const { remarks } = req.body;
 
-      const [requests] = await db.query(
+      const [requests] = await pool.query(
         'SELECT er.*, u.email, u.first_name FROM employee_requests er JOIN users u ON er.employee_id = u.id WHERE er.id = ? AND u.department_id = ?',
         [id, deptId]
       );
       if (requests.length === 0) {
-        return response.error(res, 'Service request not found or unauthorized', 404);
+        return errorResponse(res, 'Service request not found or unauthorized', [], 404);
       }
       const request = requests[0];
 
       // Update request status
-      await db.query(
+      await pool.query(
         "UPDATE employee_requests SET status = 'Approved', approved_by = ?, remarks = ?, completed_date = CURDATE() WHERE id = ?",
         [hodId, remarks || null, id]
       );
 
       // Trigger notification
-      await db.query(
+      await pool.query(
         "INSERT INTO notifications (user_id, title, message, type) VALUES (?, ?, ?, 'Request')",
         [request.employee_id, 'Service Request Approved', `Your request for "${request.title}" has been approved.`]
       );
 
       // Audit logs
-      await db.query(
+      await pool.query(
         "INSERT INTO activity_logs (user_id, module, action, description) VALUES (?, 'Request', 'Employee Request Approval', ?)",
         [hodId, `Approved service request ID ${id} ("${request.title}") requested by ${request.first_name}`]
       );
@@ -561,7 +561,7 @@ class HODController {
                <p>Sincerely,<br/>AssetFlow Team</p>`
       });
 
-      return response.success(res, 'Employee request approved successfully');
+      return successResponse(res, 'Employee request approved successfully');
     } catch (err) {
       next(err);
     }
@@ -574,23 +574,23 @@ class HODController {
       const { id } = req.params;
       const { remarks } = req.body;
 
-      const [requests] = await db.query(
+      const [requests] = await pool.query(
         'SELECT er.*, u.email, u.first_name FROM employee_requests er JOIN users u ON er.employee_id = u.id WHERE er.id = ? AND u.department_id = ?',
         [id, deptId]
       );
       if (requests.length === 0) {
-        return response.error(res, 'Service request not found or unauthorized', 404);
+        return errorResponse(res, 'Service request not found or unauthorized', [], 404);
       }
       const request = requests[0];
 
       // Update status
-      await db.query(
+      await pool.query(
         "UPDATE employee_requests SET status = 'Rejected', approved_by = ?, remarks = ?, completed_date = CURDATE() WHERE id = ?",
         [hodId, remarks || null, id]
       );
 
       // Notification
-      await db.query(
+      await pool.query(
         "INSERT INTO notifications (user_id, title, message, type) VALUES (?, ?, ?, 'Request')",
         [request.employee_id, 'Service Request Rejected', `Your request for "${request.title}" was rejected.`]
       );
@@ -605,7 +605,7 @@ class HODController {
                <p>Sincerely,<br/>AssetFlow Team</p>`
       });
 
-      return response.success(res, 'Employee request rejected');
+      return successResponse(res, 'Employee request rejected');
     } catch (err) {
       next(err);
     }
@@ -618,16 +618,14 @@ class HODController {
     try {
       const deptId = req.user.hodDepartmentId;
       
-      // Returns assets in HOD department that can act as resource bookings (e.g. labs, screens, projectors)
-      // Presumed Electronics or Equipments categories
-      const [resources] = await db.query(
+      const [resources] = await pool.query(
         `SELECT id, asset_code, asset_name, brand, model, current_status, condition, location 
          FROM assets 
          WHERE department_id = ? AND current_status IN ('Available', 'Allocated')`,
         [deptId]
       );
 
-      return response.success(res, 'Department bookable resources fetched successfully', resources);
+      return successResponse(res, 'Department bookable resources fetched successfully', resources);
     } catch (err) {
       next(err);
     }
@@ -637,7 +635,7 @@ class HODController {
     try {
       const deptId = req.user.hodDepartmentId;
 
-      const [bookings] = await db.query(
+      const [bookings] = await pool.query(
         `SELECT rb.*, u.first_name, u.last_name, a.asset_name, a.asset_code 
          FROM resource_bookings rb
          JOIN users u ON rb.employee_id = u.id
@@ -647,7 +645,7 @@ class HODController {
         [deptId]
       );
 
-      return response.success(res, 'Department resource bookings fetched successfully', bookings);
+      return successResponse(res, 'Department resource bookings fetched successfully', bookings);
     } catch (err) {
       next(err);
     }
@@ -660,8 +658,7 @@ class HODController {
     try {
       const deptId = req.user.hodDepartmentId;
 
-      // Returns all active bookings for calendar rendering
-      const [events] = await db.query(
+      const [events] = await pool.query(
         `SELECT rb.id, rb.booking_title, rb.purpose, rb.booking_date, rb.start_time, 
                 rb.end_time, rb.status, a.asset_name as resource_name,
                 CONCAT(u.first_name, ' ', u.last_name) as employee_name
@@ -672,7 +669,7 @@ class HODController {
         [deptId]
       );
 
-      return response.success(res, 'Calendar events fetched successfully', events);
+      return successResponse(res, 'Calendar events fetched successfully', events);
     } catch (err) {
       next(err);
     }
@@ -683,23 +680,22 @@ class HODController {
       const hodId = req.user.id;
       const { resource_id, booking_title, purpose, booking_date, start_time, end_time } = req.body;
 
-      // Note: Triggers on resource_bookings handle availability & timeslot overlaps automatically
-      const [result] = await db.query(
+      const [result] = await pool.query(
         `INSERT INTO resource_bookings (resource_id, employee_id, booking_title, purpose, booking_date, start_time, end_time, status, approved_by) 
          VALUES (?, ?, ?, ?, ?, ?, ?, 'Approved', ?)`,
         [resource_id, hodId, booking_title, purpose || null, booking_date, start_time, end_time, hodId]
       );
 
       // Audit logs
-      await db.query(
+      await pool.query(
         "INSERT INTO activity_logs (user_id, module, action, description) VALUES (?, 'Booking', 'Calendar Update', ?)",
         [hodId, `Created and auto-approved booking slot ID ${result.insertId}: "${booking_title}"`]
       );
 
-      return response.success(res, 'Calendar booking reservation created successfully', { id: result.insertId }, 201);
+      return successResponse(res, 'Calendar booking reservation created successfully', { id: result.insertId }, 201);
     } catch (err) {
       if (err.sqlState === '45000') {
-        return response.error(res, err.message, 400);
+        return errorResponse(res, err.message, [], 400);
       }
       next(err);
     }
@@ -711,7 +707,7 @@ class HODController {
       const { id } = req.params;
       const { booking_title, purpose, booking_date, start_time, end_time, status } = req.body;
 
-      await db.query(
+      await pool.query(
         `UPDATE resource_bookings 
          SET booking_title = ?, purpose = ?, booking_date = ?, start_time = ?, end_time = ?, status = ?, approved_by = ?
          WHERE id = ?`,
@@ -719,15 +715,15 @@ class HODController {
       );
 
       // Audit logs
-      await db.query(
+      await pool.query(
         "INSERT INTO activity_logs (user_id, module, action, description) VALUES (?, 'Booking', 'Calendar Update', ?)",
         [hodId, `Updated calendar booking ID ${id}: "${booking_title}"`]
       );
 
-      return response.success(res, 'Calendar booking updated successfully');
+      return successResponse(res, 'Calendar booking updated successfully');
     } catch (err) {
       if (err.sqlState === '45000') {
-        return response.error(res, err.message, 400);
+        return errorResponse(res, err.message, [], 400);
       }
       next(err);
     }
@@ -738,15 +734,15 @@ class HODController {
       const hodId = req.user.id;
       const { id } = req.params;
 
-      await db.query('DELETE FROM resource_bookings WHERE id = ?', [id]);
+      await pool.query('DELETE FROM resource_bookings WHERE id = ?', [id]);
 
       // Audit logs
-      await db.query(
+      await pool.query(
         "INSERT INTO activity_logs (user_id, module, action, description) VALUES (?, 'Booking', 'Calendar Update', ?)",
         [hodId, `Cancelled and deleted calendar booking ID ${id}`]
       );
 
-      return response.success(res, 'Calendar booking deleted/cancelled successfully');
+      return successResponse(res, 'Calendar booking deleted/cancelled successfully');
     } catch (err) {
       next(err);
     }
@@ -761,7 +757,7 @@ class HODController {
       const hodId = req.user.id;
 
       // 1. Asset report
-      const [assets] = await db.query(
+      const [assets] = await pool.query(
         `SELECT id, asset_code, asset_name, brand, model, purchase_cost, current_status, \`condition\` 
          FROM assets 
          WHERE department_id = ?`,
@@ -769,7 +765,7 @@ class HODController {
       );
 
       // 2. Employee report
-      const [employees] = await db.query(
+      const [employees] = await pool.query(
         `SELECT u.id, u.employee_code, u.first_name, u.last_name, u.email, u.status, u.joining_date,
                 (SELECT COUNT(*) FROM asset_allocations WHERE employee_id = u.id AND allocation_status = 'Active') as assets_held
          FROM users u
@@ -778,7 +774,7 @@ class HODController {
       );
 
       // 3. Maintenance report
-      const [maintenance] = await db.query(
+      const [maintenance] = await pool.query(
         `SELECT mr.id, a.asset_name, a.asset_code, mr.issue_title, mr.priority, mr.status, mr.requested_date, mr.completed_date
          FROM maintenance_requests mr
          JOIN assets a ON mr.asset_id = a.id
@@ -787,7 +783,7 @@ class HODController {
       );
 
       // 4. Booking report
-      const [bookings] = await db.query(
+      const [bookings] = await pool.query(
         `SELECT rb.id, a.asset_name, CONCAT(u.first_name, ' ', u.last_name) as employee, rb.booking_date, rb.start_time, rb.end_time, rb.status
          FROM resource_bookings rb
          JOIN assets a ON rb.resource_id = a.id
@@ -797,12 +793,12 @@ class HODController {
       );
 
       // Audit logs
-      await db.query(
+      await pool.query(
         "INSERT INTO activity_logs (user_id, module, action, description) VALUES (?, 'Report', 'Report Generation', ?)",
         [hodId, `Generated department report exports for HOD department ID ${deptId}`]
       );
 
-      return response.success(res, 'Reports generated successfully', {
+      return successResponse(res, 'Reports generated successfully', {
         assets,
         employees,
         maintenance,
@@ -819,11 +815,11 @@ class HODController {
   async getNotifications(req, res, next) {
     try {
       const hodId = req.user.id;
-      const [notifications] = await db.query(
+      const [notifications] = await pool.query(
         'SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC',
         [hodId]
       );
-      return response.success(res, 'Notifications list fetched successfully', notifications);
+      return successResponse(res, 'Notifications list fetched successfully', notifications);
     } catch (err) {
       next(err);
     }
@@ -834,12 +830,12 @@ class HODController {
       const hodId = req.user.id;
       const { id } = req.params;
 
-      await db.query(
+      await pool.query(
         'UPDATE notifications SET is_read = TRUE WHERE id = ? AND user_id = ?',
         [id, hodId]
       );
 
-      return response.success(res, 'Notification marked as read');
+      return successResponse(res, 'Notification marked as read');
     } catch (err) {
       next(err);
     }
@@ -860,9 +856,9 @@ class HODController {
         LEFT JOIN designations ds ON u.designation_id = ds.id
         WHERE u.id = ?
       `;
-      const [rows] = await db.query(sql, [hodId]);
+      const [rows] = await pool.query(sql, [hodId]);
       
-      return response.success(res, 'HOD profile details fetched successfully', rows[0]);
+      return successResponse(res, 'HOD profile details fetched successfully', rows[0]);
     } catch (err) {
       next(err);
     }
@@ -892,18 +888,18 @@ class HODController {
       }
 
       if (updates.length === 0) {
-        return response.error(res, 'No update parameters provided', 400);
+        return errorResponse(res, 'No update parameters provided', [], 400);
       }
 
       params.push(hodId);
       const sql = `UPDATE users SET ${updates.join(', ')} WHERE id = ?`;
-      await db.query(sql, params);
+      await pool.query(sql, params);
 
-      return response.success(res, 'HOD profile settings updated successfully');
+      return successResponse(res, 'HOD profile settings updated successfully');
     } catch (err) {
       next(err);
     }
   }
 }
 
-module.exports = new HODController();
+export default new HODController();

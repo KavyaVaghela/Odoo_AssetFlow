@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useForm } from 'react-hook-form';
-import { Eye, EyeOff, CheckCircle2, AlertCircle, Loader2, BarChart3, Settings } from 'lucide-react';
+import { Eye, EyeOff, CheckCircle2, AlertCircle, Loader2, User, Phone, Image, Building, ShieldCheck } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
+import api from '../../services/api';
 
-// Inline mock for toast to reduce dependencies and ensure robustness
+// Inline mock for toast to ensure robustness
 const Toast = ({ title, description, variant = "default", onClose }) => {
   return (
     <motion.div
@@ -45,6 +46,31 @@ const FeatureCard = ({ icon: Icon, title, description, delay }) => (
   </motion.div>
 );
 
+const departments = [
+  { id: 1, name: 'Computer Engineering' },
+  { id: 2, name: 'Human Resources' },
+  { id: 3, name: 'Information Technology' },
+  { id: 4, name: 'Finance' }
+];
+
+const designationsByDept = {
+  1: [
+    { id: 1, name: 'Lab Assistant' },
+    { id: 2, name: 'Assistant Professor' },
+    { id: 5, name: 'Department Head' }
+  ],
+  2: [
+    { id: 7, name: 'HR Specialist' }
+  ],
+  3: [
+    { id: 3, name: 'IT Specialist' },
+    { id: 4, name: 'System Administrator' }
+  ],
+  4: [
+    { id: 6, name: 'Accountant' }
+  ]
+};
+
 export default function Signup() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -52,82 +78,82 @@ export default function Signup() {
   
   const navigate = useNavigate();
 
-  const { register, handleSubmit, formState: { errors }, watch } = useForm();
+  const { register, handleSubmit, formState: { errors }, watch, setValue } = useForm({
+    defaultValues: {
+      department_id: '',
+      designation_id: ''
+    }
+  });
+
+  const selectedDeptId = watch("department_id");
   const password = watch("password");
+
+  const [availableDesignations, setAvailableDesignations] = useState([]);
+
+  useEffect(() => {
+    if (selectedDeptId) {
+      const list = designationsByDept[selectedDeptId] || [];
+      setAvailableDesignations(list);
+      setValue("designation_id", ""); // reset designation when dept changes
+    } else {
+      setAvailableDesignations([]);
+    }
+  }, [selectedDeptId, setValue]);
 
   const showToast = (toastData) => {
     setToast(toastData);
-    setTimeout(() => setToast(null), 3000);
+    setTimeout(() => setToast(null), 4000);
   };
 
   const onSubmit = async (data) => {
+    if (data.password !== data.confirmPassword) {
+      showToast({
+        variant: "destructive",
+        title: "Validation Error",
+        description: "Passwords do not match.",
+      });
+      return;
+    }
+
     setIsLoading(true);
     try {
-      const response = await fetch('http://localhost:5000/api/admin/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          first_name: data.firstName,
-          last_name: data.lastName,
-          email: data.email,
-          password: data.password
-        })
+      const res = await api.post('/api/admin/auth/register', {
+        first_name: data.firstName,
+        last_name: data.lastName,
+        email: data.email,
+        password: data.password,
+        phone: data.phone,
+        department_id: data.department_id ? parseInt(data.department_id) : null,
+        designation_id: data.designation_id ? parseInt(data.designation_id) : null,
+        profile_image: data.profileImage || null
       });
 
-      const result = await response.json();
       setIsLoading(false);
 
-      if (result.success) {
-        // Persist token and user profile
-        localStorage.setItem('token', result.data.token);
-        localStorage.setItem('user', JSON.stringify(result.data.user));
-
+      if (res.data.success) {
         showToast({
-          title: "Account Created",
-          description: "Welcome to AssetFlow! Redirecting to Dashboard...",
+          title: "Account Registered",
+          description: "Registration request submitted successfully. Waiting for admin approval.",
         });
 
-        // Redirect to Dashboard
         setTimeout(() => {
-          navigate('/dashboard');
-        }, 1000);
-      } else {
-        showToast({
-          variant: "destructive",
-          title: "Signup Failed",
-          description: result.message || "Failed to create an account. Please try again.",
-        });
+          navigate('/login');
+        }, 3000);
       }
     } catch (err) {
       setIsLoading(false);
       showToast({
         variant: "destructive",
-        title: "Connection Error",
-        description: "Cannot connect to the authentication server. Verify that the backend is running.",
+        title: "Registration Failed",
+        description: err.response?.data?.message || "Failed to create registration request. Please try again.",
       });
     }
   };
 
-  const handleSocialLogin = async (provider) => {
-    setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setIsLoading(false);
-    showToast({
-      title: "Authentication Successful",
-      description: `Logged in with ${provider}. Redirecting to Dashboard...`,
-    });
-    setTimeout(() => {
-      navigate('/dashboard');
-    }, 1000);
-  };
-
   return (
     <div className="min-h-screen w-full flex bg-gray-50 dark:bg-black font-sans text-gray-900 dark:text-gray-100">
-      {/* Left Panel: Branding (Hidden on mobile/tablet) */}
+      {/* Left Panel: Branding */}
       <div className="hidden lg:flex w-[45%] bg-[#0F172A] relative flex-col justify-between p-12 overflow-hidden">
-        {/* Background Decorative Shapes */}
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-blue-600/20 blur-[100px]" />
         <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-blue-400/10 blur-[100px]" />
 
@@ -137,10 +163,12 @@ export default function Signup() {
             animate={{ opacity: 1, x: 0 }}
             className="flex items-center gap-2 mb-16"
           >
-            <div className="w-8 h-8 bg-[#2563EB] rounded-lg flex items-center justify-center">
-              <div className="w-4 h-4 bg-white rounded-sm" />
-            </div>
-            <span className="text-xl font-bold text-white tracking-tight">AssetFlow</span>
+            <Link to="/" className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-[#2563EB] rounded-lg flex items-center justify-center">
+                <div className="w-4 h-4 bg-white rounded-sm" />
+              </div>
+              <span className="text-xl font-bold text-white tracking-tight">AssetFlow</span>
+            </Link>
           </motion.div>
 
           <motion.div
@@ -159,7 +187,7 @@ export default function Signup() {
 
           <div className="relative z-10 w-full max-w-md">
             <FeatureCard 
-              icon={AlertCircle} 
+              icon={Building} 
               title="Asset Tracking" 
               description="Real-time visibility into all organizational assets globally." 
               delay={0.2} 
@@ -180,9 +208,9 @@ export default function Signup() {
         </div>
       </div>
 
-      {/* Right Panel: Authentication */}
-      <div className="w-full lg:w-[55%] flex flex-col justify-center items-center p-6 lg:p-12 bg-white dark:bg-background relative">
-        <div className="w-full max-w-md">
+      {/* Right Panel: Authentication Form */}
+      <div className="w-full lg:w-[55%] flex flex-col justify-center items-center p-6 lg:p-12 bg-white dark:bg-background relative overflow-y-auto">
+        <div className="w-full max-w-md my-8">
           {/* Mobile Logo */}
           <div className="flex lg:hidden items-center gap-2 mb-10 justify-center">
             <div className="w-8 h-8 bg-[#2563EB] rounded-lg flex items-center justify-center">
@@ -205,23 +233,23 @@ export default function Signup() {
               
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-sm font-medium">First name</label>
+                  <label className="text-xs font-medium">First name</label>
                   <input
                     type="text"
                     placeholder="Jane"
-                    className={`w-full px-4 py-3 rounded-[20px] border bg-transparent outline-none transition-all ${
-                      errors.firstName ? 'border-red-500 focus:ring-red-500/20' : 'border-gray-200 dark:border-gray-700 focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20'
+                    className={`w-full px-4 py-2.5 rounded-xl border bg-transparent outline-none text-xs transition-all ${
+                      errors.firstName ? 'border-red-500 focus:ring-red-500/20' : 'border-gray-200 dark:border-gray-800 focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20'
                     }`}
                     {...register("firstName", { required: "Required" })}
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-sm font-medium">Last name</label>
+                  <label className="text-xs font-medium">Last name</label>
                   <input
                     type="text"
                     placeholder="Doe"
-                    className={`w-full px-4 py-3 rounded-[20px] border bg-transparent outline-none transition-all ${
-                      errors.lastName ? 'border-red-500 focus:ring-red-500/20' : 'border-gray-200 dark:border-gray-700 focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20'
+                    className={`w-full px-4 py-2.5 rounded-xl border bg-transparent outline-none text-xs transition-all ${
+                      errors.lastName ? 'border-red-500 focus:ring-red-500/20' : 'border-gray-200 dark:border-gray-800 focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20'
                     }`}
                     {...register("lastName", { required: "Required" })}
                   />
@@ -229,12 +257,22 @@ export default function Signup() {
               </div>
 
               <div className="space-y-1">
-                <label className="text-sm font-medium">Email address</label>
+                <label className="text-xs font-medium">Profile Image URL</label>
+                <input
+                  type="text"
+                  placeholder="https://example.com/avatar.jpg"
+                  className={`w-full px-4 py-2.5 rounded-xl border bg-transparent outline-none text-xs border-gray-200 dark:border-gray-800 focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20`}
+                  {...register("profileImage")}
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-medium">Email address</label>
                 <input
                   type="email"
                   placeholder="name@company.com"
-                  className={`w-full px-4 py-3 rounded-[20px] border bg-transparent outline-none transition-all ${
-                    errors.email ? 'border-red-500 focus:ring-2 focus:ring-red-500/20' : 'border-gray-200 dark:border-gray-700 focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20'
+                  className={`w-full px-4 py-2.5 rounded-xl border bg-transparent outline-none text-xs transition-all ${
+                    errors.email ? 'border-red-500 focus:ring-2 focus:ring-red-500/20' : 'border-gray-200 dark:border-gray-800 focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20'
                   }`}
                   {...register("email", { 
                     required: "Email is required",
@@ -244,76 +282,84 @@ export default function Signup() {
                     }
                   })}
                 />
-                {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>}
+                {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>}
               </div>
 
               <div className="space-y-1">
-                <label className="text-sm font-medium">Password</label>
-                <div className="relative">
+                <label className="text-xs font-medium">Phone Number</label>
+                <input
+                  type="text"
+                  placeholder="+1 (555) 019-922"
+                  className={`w-full px-4 py-2.5 rounded-xl border bg-transparent outline-none text-xs border-gray-200 dark:border-gray-800 focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20`}
+                  {...register("phone")}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-xs font-medium">Department</label>
+                  <select
+                    className="w-full px-4 py-2.5 rounded-xl border bg-transparent dark:bg-slate-900 outline-none text-xs border-gray-200 dark:border-gray-800 focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20"
+                    {...register("department_id", { required: "Required" })}
+                  >
+                    <option value="">Select Dept</option>
+                    {departments.map((d) => (
+                      <option key={d.id} value={d.id}>{d.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-medium">Designation</label>
+                  <select
+                    className="w-full px-4 py-2.5 rounded-xl border bg-transparent dark:bg-slate-900 outline-none text-xs border-gray-200 dark:border-gray-800 focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20"
+                    {...register("designation_id", { required: "Required" })}
+                    disabled={!selectedDeptId}
+                  >
+                    <option value="">Select Designation</option>
+                    {availableDesignations.map((ds) => (
+                      <option key={ds.id} value={ds.id}>{ds.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-xs font-medium">Password</label>
                   <input
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Create a password"
-                    className={`w-full px-4 py-3 rounded-[20px] border bg-transparent outline-none transition-all ${
-                      errors.password ? 'border-red-500 focus:ring-2 focus:ring-red-500/20' : 'border-gray-200 dark:border-gray-700 focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20'
+                    type="password"
+                    placeholder="••••••••"
+                    className={`w-full px-4 py-2.5 rounded-xl border bg-transparent outline-none text-xs transition-all ${
+                      errors.password ? 'border-red-500 focus:ring-2 focus:ring-red-500/20' : 'border-gray-200 dark:border-gray-800 focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20'
                     }`}
                     {...register("password", { 
-                      required: "Password is required",
-                      minLength: { value: 8, message: "Must be at least 8 characters" }
+                      required: "Required",
+                      minLength: { value: 8, message: "Min 8 chars" }
                     })}
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors focus:outline-none"
-                  >
-                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                  </button>
                 </div>
-                {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password.message}</p>}
+                <div className="space-y-1">
+                  <label className="text-xs font-medium">Confirm Password</label>
+                  <input
+                    type="password"
+                    placeholder="••••••••"
+                    className={`w-full px-4 py-2.5 rounded-xl border bg-transparent outline-none text-xs border-gray-200 dark:border-gray-800 focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20`}
+                    {...register("confirmPassword", { required: "Required" })}
+                  />
+                </div>
               </div>
 
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full bg-[#2563EB] hover:bg-blue-700 text-white font-medium py-3 rounded-[20px] transition-all flex items-center justify-center disabled:opacity-70 mt-2"
+                className="w-full bg-[#2563EB] hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition-all flex items-center justify-center disabled:opacity-70 mt-4 text-xs cursor-pointer"
               >
-                {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Create Account'}
+                {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Register Request'}
               </button>
             </form>
 
-            <div className="mt-8 flex items-center gap-4">
-              <div className="flex-1 h-px bg-gray-200 dark:bg-gray-800" />
-              <span className="text-xs text-gray-400 font-medium tracking-wider">OR CONTINUE WITH</span>
-              <div className="flex-1 h-px bg-gray-200 dark:bg-gray-800" />
-            </div>
-
-            <div className="mt-6 grid grid-cols-2 gap-4">
-              <button 
-                onClick={() => handleSocialLogin('Google')}
-                className="flex items-center justify-center gap-2 py-2.5 border border-gray-200 dark:border-gray-800 rounded-[20px] hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors text-sm font-medium">
-                <svg className="w-5 h-5" viewBox="0 0 24 24">
-                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
-                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
-                </svg>
-                Google
-              </button>
-              <button 
-                onClick={() => handleSocialLogin('Microsoft')}
-                className="flex items-center justify-center gap-2 py-2.5 border border-gray-200 dark:border-gray-800 rounded-[20px] hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors text-sm font-medium">
-                <svg className="w-5 h-5" viewBox="0 0 21 21">
-                  <path fill="#f25022" d="M1 1h9v9H1z"/>
-                  <path fill="#7fba00" d="M11 1h9v9h-9z"/>
-                  <path fill="#00a4ef" d="M1 11h9v9H1z"/>
-                  <path fill="#ffb900" d="M11 11h9v9h-9z"/>
-                </svg>
-                Microsoft
-              </button>
-            </div>
-
-            <p className="mt-8 text-center text-sm text-gray-500 dark:text-gray-400">
-              Already have an account? <Link to="/login" className="font-medium text-[#2563EB] hover:text-blue-700">Sign In</Link>
+            <p className="mt-8 text-center text-xs text-gray-500 dark:text-gray-400">
+              Already have an account? <Link to="/login" className="font-medium text-[#2563EB] hover:text-blue-700 focus:outline-none">Sign In</Link>
             </p>
           </motion.div>
         </div>

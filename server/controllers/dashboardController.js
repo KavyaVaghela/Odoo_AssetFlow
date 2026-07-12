@@ -8,7 +8,7 @@ export const getDashboardStats = async (req, res, next) => {
     const [categories] = await pool.query('SELECT COUNT(*) as total FROM asset_categories');
     const [pendingApprovals] = await pool.query('SELECT COUNT(*) as total FROM users WHERE status = "Pending"');
     
-    const [recentActivities] = await pool.query('SELECT * FROM activity_logs ORDER BY timestamp DESC LIMIT 5');
+    const [recentActivities] = await pool.query('SELECT * FROM activity_logs ORDER BY created_at DESC LIMIT 5');
     const [recentNotifications] = await pool.query('SELECT * FROM notifications ORDER BY created_at DESC LIMIT 5');
 
     return successResponse(res, 'Dashboard statistics fetched successfully', {

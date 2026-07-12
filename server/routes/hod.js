@@ -1,8 +1,9 @@
-const express = require('express');
+import express from 'express';
+import hodController from '../controllers/hodController.js';
+import verifyHOD from '../middleware/hodAuth.js';
+import { updateProfile, bookingSlot, assignTechnician } from '../validators/hodValidator.js';
+
 const router = express.Router();
-const hodController = require('../controllers/hodController');
-const verifyHOD = require('../middleware/hodAuth');
-const { updateProfile, bookingSlot, assignTechnician } = require('../validators/hodValidator');
 
 // Apply verifyHOD middleware to all endpoints under /api/hod
 router.use(verifyHOD);
@@ -54,4 +55,4 @@ router.put('/notifications/read/:id', hodController.readNotification);
 router.get('/profile', hodController.getProfile);
 router.put('/profile', updateProfile, hodController.updateProfile);
 
-module.exports = router;
+export default router;
